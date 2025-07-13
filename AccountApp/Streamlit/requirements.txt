@@ -6,6 +6,11 @@ spacy-llm
 openpyxl
 openai>=1.0.0
 tenacity>=8.0.0
+plotly>=5.0.0
+folium>=0.14.0
+streamlit-folium>=0.11.0
+flask>=2.0.0
+flask-cors>=4.0.0
 
 # 核心依賴包及其相容版本
 numpy==1.26.3  # 與大多數包相容

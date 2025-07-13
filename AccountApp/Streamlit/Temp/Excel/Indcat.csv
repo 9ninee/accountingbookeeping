@@ -1,61 +1,17 @@
-Individual Categories,Column2,Column3,cat_name,
-taxable Income ,,,,
-taxable Income ,1.1,Salary income,1.1.Salary income,
-taxable Income ,1.2,Saving interest,1.2.Saving interest,
-taxable Income ,1.3,Rent income,1.3.Rent income,
-taxable Income ,1.4,Personal,1.4.Personal,
-taxable Income ,1.5,Others,1.5.Others,
-,,,,
-expensses ,,,,
-Housing,2.1,Mortgages / Rent,2.1.Mortgages / Rent,
-Housing,2.2,Property taxes,2.2.Property taxes,
-Housing,2.3,Household repairs,2.3.Household repairs,
-Housing,2.4,HOA fee,2.4.HOA fee,
-,,,,
-transportation,3.1,Car payment,3.1.Car payment,
-transportation,3.2,Car insurance ,3.2.Car insurance ,
-transportation,3.3,Fuel,3.3.Fuel,
-transportation,3.4,Maintenance,3.4.Maintenance,
-transportation,3.5,Parkings,3.5.Parkings,
-transportation,3.6,Registration and DMV fee,3.6.Registration and DMV fee,
-,,,,
-Food ,4.1,Groceries,4.1.Groceries,
-Food ,4.2,Restaurants,4.2.Restaurants,
-,,,,
-Utilities,5.1,Electricity,5.1.Electricity,
-Utilities,5.2,Water,5.2.Water,
-Utilities,5.3,Garbage,5.3.Garbage,
-Utilities,5.4,Phones,5.4.Phones,
-Utilities,5.5,Cable,5.5.Cable,
-Utilities,5.6,Internet,5.6.Internet,
-,,,,
-Clothing,6.1,Clothing,6.1.Clothing,
-,,,,
-Medical / Health Care,7,Medical / Health Care,7.Medical / Health Care,
-,,,,
-Insurance,8,Insurance,8.Insurance,
-,,,,
-Household Items /suppliy,9,Household Items /suppliy,9.Household Items /suppliy,
-,,,,
-Personal,10,Personal,10.Personal,
-,,,,
-Debt,11.1,Student loan,11.1.Student loan,
-Debt,11.2,Credit Card,11.2.Credit Card,
-Debt,11.3,Personal loan,11.3.Personal loan,
-,,,,
-Retirement,12,Investing,12.Investing,
-,,,,
-Education,13,Colleage fee,13.Colleage fee,
-,,,,
-Saving,14,Saving account,14.Saving account,
-,,,,
-Gifts ,15,Gifts ,15.Gifts ,
-,,,,
-Entertainment,16,Entertainment,16.Entertainment,
-,,,,
-Others,17,Others,17.Others,
-,,,,
-Deductables ,18.1,Personal Pension,18.1.Personal Pension,
-Deductables ,18.2,Charity Donation,18.2.Charity Donation,
-Deductables ,18.3,Maintenance payment,18.3.Maintenance payment,
-Deductables ,18.4,National Insurance ,18.4.National Insurance ,
+cat_name
+Vehicle Expenses
+Fuel
+Maintenance
+Insurance
+Tolls
+Parking
+Office Supplies
+Meals
+Client Entertainment
+Professional Services
+Equipment
+Software
+Training
+Business Travel
+Hotel
+Other
