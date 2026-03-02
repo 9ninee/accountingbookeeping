@@ -1,32 +1,46 @@
-# 🧾 Automatic Bookkeeping Platform for Self-Employed Drivers
+# 🧾 Automatic Bookkeeping Platform
 
-> A Python-based bookkeeping automation tool that reads bank statements, automatically categorises transactions, and generates tax-ready expense summaries — built specifically for self-employed drivers (Uber, Bolt, delivery platforms, and more).
+> A Python + Streamlit web app that ingests UK bank statement exports, automatically maps transactions to categories, and gives you a live filterable dashboard — built for anyone who needs to track personal or business expenses without paying for accounting software.
 
 ---
 
 ## 📖 Overview
 
-Self-employed drivers face a recurring problem: manually sorting through hundreds of monthly bank transactions to separate business expenses from personal spending — fuel, insurance, platform fees, vehicle maintenance — before filing taxes or reviewing profitability.
+Managing bank statements manually is tedious. This tool automates the process: drop in your exported bank CSV, and it merges it against a growing category lookup table to classify each transaction. Any unrecognised transactions are flagged for you to label — and once labelled, they're remembered for next time.
 
-This tool automates that entire process. Upload your bank statement, and it handles the categorisation, summarisation, and reporting — saving hours of manual bookkeeping every month.
-
-No accounting software subscription required. No data sent to third-party servers. Runs entirely on your local machine.
+The whole thing runs as a local **Streamlit** web app with an interactive data grid, so you can filter and explore your spending by category in real time.
 
 ---
 
 ## ✨ Features
 
-- 📂 **Bank statement ingestion** — reads exported CSV/Excel statements from major UK banks
-- 🤖 **Automatic transaction categorisation** — classifies transactions into relevant business expense categories:
-  - ⛽ Fuel
-  - 🚗 Vehicle maintenance & repairs
-  - 🛡️ Insurance
-  - 📱 Platform fees (Uber, Bolt, Amazon Flex, etc.)
-  - 🅿️ Parking & tolls
-  - 📦 Other business expenses
-- 📊 **Summary reports** — generates monthly and annual expense breakdowns ready for self-assessment tax returns
-- 🧮 **Income vs. expense tracking** — calculates net earnings per period
-- 🔧 **Customisable rules** — add your own categorisation keywords to match your spending patterns
+- 📂 **Bank statement ingestion** — reads CSV exports from UK banks (currently supports Lloyds; HSBC and Chase adapters are scaffolded)
+- 🤖 **Automatic transaction categorisation** — merges transactions against a saved description→category lookup table
+- 🆕 **Unknown transaction flagging** — unrecognised transactions are exported to a separate Excel file for you to categorise manually, then fed back into the lookup for future runs
+- 💾 **Persistent category memory** — your categorisation decisions accumulate over time; re-running the script won't lose previous labels
+- 🗂️ **Automatic daily backups** — the previous data file is backed up with a date-stamped filename before each update
+- 📊 **Interactive Streamlit dashboard** — filter your full transaction history by category using a multiselect widget, powered by `AgGrid`
+- 🔢 **Multi-file batch processing** — processes all CSV files in the input folder in one run
+
+---
+
+## 🏗️ Project Structure
+
+```
+AccountApp/Streamlit/
+│
+├── 1_home.py              # Streamlit dashboard — category filter + AgGrid table
+├── Acc_Function.py        # Core logic: bank parsers, merge, dedup, backup
+├── Test.ipynb             # Development notebook — batch processing workflow
+│
+└── pages/Temp/
+    ├── Excel/             # Drop new bank statement CSVs here
+    │   └── DiscriptionCategories.xlsx   # Uncategorised transactions (for manual labelling)
+    └── Record/
+        ├── Data.csv                     # Master transaction record
+        ├── DiscriptionCategories.xlsx   # Saved category lookup table
+        └── Backup/                      # Auto date-stamped backups
+```
 
 ---
 
@@ -35,73 +49,63 @@ No accounting software subscription required. No data sent to third-party server
 ### Prerequisites
 
 ```bash
-pip install pandas openpyxl
+pip install streamlit pandas numpy openpyxl streamlit-aggrid
 ```
 
-### Usage
+### Workflow
 
-1. Export your bank statement as a **CSV or Excel file**
-2. Place it in the project folder
-3. Run the script:
+**Step 1 — Export your bank statement**
+Download a CSV export from your bank (Lloyds format supported out of the box).
 
+**Step 2 — Drop it in the input folder**
+Place the CSV in `pages/Temp/Excel/`.
+
+**Step 3 — Run the processing script**
+Execute the notebook or script to merge new transactions into your master record. Unrecognised transactions will be saved to `DiscriptionCategories.xlsx`.
+
+**Step 4 — Label new categories**
+Open `DiscriptionCategories.xlsx`, fill in the `Categories` column for any new transactions, and save.
+
+**Step 5 — Re-run to apply labels**
+Run the merge again — your new labels are now saved into the lookup table and applied automatically in future.
+
+**Step 6 — View the dashboard**
 ```bash
-python main.py --input your_statement.csv
+streamlit run 1_home.py
 ```
-
-4. Find your categorised summary report in the `/output` folder
+Open your browser and filter transactions by category interactively.
 
 ---
 
-## 🗂️ Expense Categories
+## 🏦 Supported Banks
 
-The tool maps transaction descriptions to HMRC-aligned expense categories out of the box:
-
-| Category | Example Keywords |
+| Bank | Status |
 |---|---|
-| Fuel | Shell, BP, Esso, Tesco Fuel |
-| Platform fees | Uber, Bolt, Amazon Flex, Stuart |
-| Insurance | Admiral, Direct Line, Aviva |
-| Vehicle maintenance | Halfords, Kwik Fit, Motorpoint |
-| Parking & tolls | NCP, RingGo, DART Charge |
-| Phone & data | Vodafone, EE, O2, Three |
+| Lloyds | ✅ Supported |
+| HSBC | 🔧 Scaffolded (in progress) |
+| Chase | 🔧 Scaffolded (in progress) |
 
-> Custom keywords can be added in `categories.py`.
-
----
-
-## 📄 Output Example
-
-```
-=== Monthly Summary: January 2025 ===
-Income:              £2,840.00
-Fuel:               -£320.50
-Platform fees:       -£284.00
-Insurance:           -£112.00
-Vehicle maintenance: -£85.00
-Parking & tolls:     -£42.00
-───────────────────────────────
-Net Earnings:        £1,996.50
-```
+The `bank` class in `Acc_Function.py` is designed to be extended — add a new method for any bank whose CSV format you want to support.
 
 ---
 
 ## 🗺️ Scalability & Future Directions
 
-- **🏦 Open Banking API integration** — connect directly to bank accounts via [Plaid](https://plaid.com) or [TrueLayer](https://truelayer.com) to fetch transactions automatically (no manual exports)
-- **🤖 ML-powered categorisation** — train a classifier on labelled transaction data for higher accuracy across edge cases
-- **📱 Mobile-friendly web UI** — wrap in a lightweight Flask/FastAPI app so drivers can use it on their phone
-- **📤 HMRC-ready export** — generate pre-filled SA103 (Self Employment) supplementary pages for self-assessment
-- **📊 Profitability dashboard** — visualise earnings trends, busiest periods, and expense ratios over time
-- **👥 Multi-driver support** — extend for fleet operators or agencies managing multiple self-employed drivers
-- **🔗 Accounting software sync** — export directly to [QuickBooks](https://quickbooks.intuit.com/uk/), [Xero](https://www.xero.com/uk/), or [FreeAgent](https://www.freeagent.com)
+- **🏦 More bank adapters** — complete HSBC and Chase parsers; add Monzo, Starling, Barclays, NatWest
+- **📊 Spending analytics** — pie/bar charts breaking down expenses by category and month (chart code is partially scaffolded in `1_home.py`)
+- **🤖 ML-assisted categorisation** — train a text classifier on your labelled descriptions to auto-suggest categories for new transactions
+- **☁️ Open Banking API** — replace manual CSV exports with automatic transaction fetching via [TrueLayer](https://truelayer.com) or [Plaid](https://plaid.com)
+- **📤 Tax-ready export** — generate HMRC self-assessment compatible expense summaries
+- **🌐 Multi-user support** — extend to support multiple accounts or users with separate data stores
+- **📱 Mobile UI** — wrap the Streamlit app for mobile-friendly use
 
 ---
 
 ## 🏷️ Related
 
-[#HMRC](https://www.gov.uk/self-assessment-tax-returns) · [#SelfEmployed](https://www.linkedin.com) · [#GigEconomy](https://www.linkedin.com) · [#Python](https://www.linkedin.com) · [#Automation](https://www.linkedin.com) · [#OpenBanking](https://www.openbanking.org.uk) · [#FinTech](https://www.linkedin.com) · [#Bookkeeping](https://www.linkedin.com)
+[#Python](https://github.com) · [#Streamlit](https://streamlit.io) · [#Pandas](https://pandas.pydata.org) · [#OpenBanking](https://www.openbanking.org.uk) · [#PersonalFinance](https://github.com) · [#Automation](https://github.com) · [#FinTech](https://github.com)
 
-**Companies & platforms in this space:** [Uber](https://www.uber.com/gb/en/drive/) · [Bolt](https://driver.bolt.eu/en-gb/) · [Amazon Flex](https://flex.amazon.co.uk) · [TrueLayer](https://truelayer.com) · [Xero](https://www.xero.com/uk/) · [FreeAgent](https://www.freeagent.com) · [QuickBooks](https://quickbooks.intuit.com/uk/)
+**Companies & platforms in this space:** [TrueLayer](https://truelayer.com) · [Plaid](https://plaid.com) · [Monzo](https://monzo.com) · [Starling Bank](https://www.starlingbank.com) · [Xero](https://www.xero.com/uk/) · [FreeAgent](https://www.freeagent.com) · [HMRC](https://www.gov.uk/self-assessment-tax-returns)
 
 ---
 
@@ -111,4 +115,4 @@ MIT — free to use, modify, and share.
 
 ---
 
-*Built to solve a real problem: making tax season less painful for self-employed drivers in the UK. 🚗💨*
+*Built to automate the boring part of personal finance — so you can focus on the decisions, not the data entry.*
