@@ -23,7 +23,6 @@
     "@react-navigation/native": "^6.1.0",
     "@react-navigation/bottom-tabs": "^6.5.0",
     "@react-navigation/native-stack": "^6.9.0",
-    "react-native-csv": "^1.0.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
@@ -40,6 +39,6 @@
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
     ],
     "moduleFileExtensions": ["ts", "tsx", "js", "jsx"],
-    "testPathPattern": "__tests__/.*\\.(test|spec)\\.[jt]sx?$"
+    "testMatch": ["**/__tests__/**/*.(test|spec).[jt]s?(x)"]
   }
 }

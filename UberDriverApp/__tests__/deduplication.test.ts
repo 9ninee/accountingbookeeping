@@ -34,8 +34,12 @@ describe('computeStringSimilarity', () => {
     expect(score).toBeGreaterThan(0.5);
   });
 
-  it('returns 0 for single-character strings', () => {
-    expect(computeStringSimilarity('a', 'a')).toBe(0);
+  it('returns 1 for identical single-character strings', () => {
+    expect(computeStringSimilarity('a', 'a')).toBe(1);
+  });
+
+  it('returns 0 for different single-character strings', () => {
+    expect(computeStringSimilarity('a', 'b')).toBe(0);
   });
 });
 
