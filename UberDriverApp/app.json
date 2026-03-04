@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Uber Driver Tracker",
+    "slug": "uber-driver-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uberdrivertracker.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to track mileage while driving.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need background location access to track mileage during your Uber trips.",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.uberdrivertracker.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-location",
+      "expo-document-picker",
+      "expo-file-system",
+      "expo-sqlite"
+    ]
+  }
+}
