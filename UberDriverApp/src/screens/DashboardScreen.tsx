@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getTransactionSummary, getMileageSummary } from '../services/database';
 import { getTrackingStatus } from '../services/mileageTracker';
+import { getStorageStats, forceCleanup, StorageStats } from '../services/storageManager';
 import { formatCurrency, formatMiles, getCurrentMonthRange, calculateMileageDeduction } from '../utils/helpers';
 
 export default function DashboardScreen() {
@@ -16,15 +17,18 @@ export default function DashboardScreen() {
   });
   const [mileageSummary, setMileageSummary] = useState({ totalMiles: 0, tripCount: 0 });
   const [trackingStatus, setTrackingStatus] = useState(getTrackingStatus());
+  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
 
   const loadData = useCallback(async () => {
-    const [txn, mil] = await Promise.all([
+    const [txn, mil, storage] = await Promise.all([
       getTransactionSummary(monthRange.start, monthRange.end),
       getMileageSummary(monthRange.start, monthRange.end),
+      getStorageStats(),
     ]);
     setTxnSummary(txn);
     setMileageSummary(mil);
     setTrackingStatus(getTrackingStatus());
+    setStorageStats(storage);
   }, [monthRange]);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
@@ -33,6 +37,27 @@ export default function DashboardScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleCleanup = () => {
+    Alert.alert(
+      'Clean Up Storage',
+      'This will archive old trip route data to free up space. Trip summaries (distance, dates) are preserved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clean Up',
+          onPress: async () => {
+            const result = await forceCleanup();
+            await loadData();
+            Alert.alert(
+              'Cleanup Complete',
+              `Archived ${result.hotToWarm + result.warmToCold} trips, freed ${result.freedPoints} route points.`
+            );
+          },
+        },
+      ]
+    );
   };
 
   const netIncome = txnSummary.totalIncome - txnSummary.totalBusinessExpenses;
@@ -91,6 +116,30 @@ export default function DashboardScreen() {
         </>
       )}
 
+      {/* Storage Usage */}
+      {storageStats && (
+        <>
+          <Text style={styles.sectionHeader}>Storage</Text>
+          <View style={[styles.storageCard, storageStats.isOverThreshold && styles.storageWarning]}>
+            <View style={styles.storageRow}>
+              <View>
+                <Text style={styles.storageLabel}>Database Size</Text>
+                <Text style={styles.storageValue}>{storageStats.dbSizeMB} MB</Text>
+              </View>
+              <View>
+                <Text style={styles.storageLabel}>Route Points</Text>
+                <Text style={styles.storageValue}>{storageStats.totalRoutePoints.toLocaleString()}</Text>
+              </View>
+            </View>
+            {storageStats.isOverThreshold && (
+              <TouchableOpacity style={styles.cleanupBtn} onPress={handleCleanup}>
+                <Text style={styles.cleanupBtnText}>Clean Up Old Data</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      )}
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -133,4 +182,17 @@ const styles = StyleSheet.create({
   },
   categoryName: { color: '#ccc', fontSize: 15, textTransform: 'capitalize' },
   categoryAmount: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  storageCard: {
+    backgroundColor: '#1a1a2e', borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: '#333',
+  },
+  storageWarning: { borderColor: '#FF9800' },
+  storageRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  storageLabel: { color: '#888', fontSize: 13 },
+  storageValue: { color: '#fff', fontSize: 18, fontWeight: '600', marginTop: 4 },
+  cleanupBtn: {
+    backgroundColor: '#FF9800', borderRadius: 8, paddingVertical: 10, alignItems: 'center',
+    marginTop: 12,
+  },
+  cleanupBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });

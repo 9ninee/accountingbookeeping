@@ -4,6 +4,10 @@ export type TransactionType = 'business' | 'personal';
 
 export type ImportSource = 'manual' | 'csv_import' | 'apple_wallet' | 'bank_sync';
 
+export type ValidationStatus = 'verified' | 'unverified' | 'conflict';
+
+export type StorageTier = 'hot' | 'warm' | 'cold';
+
 export type TransactionCategory =
   | 'fuel'
   | 'vehicle_maintenance'
@@ -38,6 +42,9 @@ export interface Transaction {
   notes: string | null;
   isDuplicate: boolean;
   duplicateOfId: string | null; // links to the original if flagged as duplicate
+  dedupHash: string | null; // hash for O(1) dedup lookups
+  validationStatus: ValidationStatus;
+  matchedSourceIds: string[] | null; // IDs of matching transactions from other sources
   createdAt: string;
   updatedAt: string;
 }
@@ -54,7 +61,8 @@ export interface MileageTrip {
   isActive: boolean; // currently tracking
   purpose: 'uber_trip' | 'commute' | 'errand' | 'other';
   notes: string | null;
-  routePoints: RoutePoint[]; // stored as JSON in DB
+  routePoints: RoutePoint[]; // loaded lazily from route_points table
+  storageTier: StorageTier;
   createdAt: string;
 }
 
@@ -107,4 +115,66 @@ export interface BankSyncConfig {
   institutionName: string | null;
   lastSyncAt: string | null;
   accountIds: string[];
+}
+
+// ── Cross-Reference Types ──
+
+export interface CrossReferenceMatch {
+  transactionIds: string[]; // IDs from different sources that match
+  sources: ImportSource[];
+  confidence: number;
+  date: string;
+  amount: number;
+  descriptions: string[];
+}
+
+export interface CrossReferenceResult {
+  matched: CrossReferenceMatch[];
+  unmatchedBySource: Record<ImportSource, Transaction[]>;
+  conflicts: CrossReferenceConflict[];
+  totalProcessed: number;
+}
+
+export interface CrossReferenceConflict {
+  transactionIds: string[];
+  sources: ImportSource[];
+  reason: string; // e.g., "Amount differs by $2.50"
+  date: string;
+  amounts: number[];
+}
+
+// ── Import Review Types ──
+
+export type ImportReviewStatus = 'new' | 'duplicate' | 'conflict';
+
+export interface ImportReviewItem {
+  transaction: Partial<Transaction>;
+  status: ImportReviewStatus;
+  duplicateMatch?: DuplicateCandidate;
+  conflictDetails?: string;
+  userAction?: 'accept' | 'reject';
+}
+
+export interface ImportReviewResult {
+  items: ImportReviewItem[];
+  summary: {
+    newCount: number;
+    duplicateCount: number;
+    conflictCount: number;
+  };
+}
+
+// ── Pagination Types ──
+
+export interface PaginationParams {
+  limit: number;
+  offset: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  hasMore: boolean;
+  offset: number;
+  limit: number;
 }

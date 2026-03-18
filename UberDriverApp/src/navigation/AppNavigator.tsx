@@ -3,11 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
+import { ImportReviewResult } from '../models/types';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import MileageScreen from '../screens/MileageScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
 import ImportScreen from '../screens/ImportScreen';
+import ImportReviewScreen from '../screens/ImportReviewScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import TripDetailScreen from '../screens/TripDetailScreen';
@@ -30,9 +32,15 @@ export type MileageStackParamList = {
   TripDetail: { tripId: string };
 };
 
+export type ImportStackParamList = {
+  ImportHome: undefined;
+  ImportReview: { reviewResult: ImportReviewResult };
+};
+
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const TransactionsStack = createNativeStackNavigator<TransactionsStackParamList>();
 const MileageStack = createNativeStackNavigator<MileageStackParamList>();
+const ImportStack = createNativeStackNavigator<ImportStackParamList>();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
@@ -101,6 +109,28 @@ function MileageNavigator() {
   );
 }
 
+function ImportNavigator() {
+  return (
+    <ImportStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#1a1a2e' },
+        headerTintColor: '#fff',
+      }}
+    >
+      <ImportStack.Screen
+        name="ImportHome"
+        component={ImportScreen}
+        options={{ title: 'Import' }}
+      />
+      <ImportStack.Screen
+        name="ImportReview"
+        component={ImportReviewScreen}
+        options={{ title: 'Review Import' }}
+      />
+    </ImportStack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
   return (
     <NavigationContainer>
@@ -133,8 +163,8 @@ export default function AppNavigator() {
         />
         <Tab.Screen
           name="ImportTab"
-          component={ImportScreen}
-          options={{ title: 'Import' }}
+          component={ImportNavigator}
+          options={{ title: 'Import', headerShown: false }}
         />
       </Tab.Navigator>
     </NavigationContainer>

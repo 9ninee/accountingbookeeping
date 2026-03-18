@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { importCSVFile } from '../services/csvImporter';
 import { importFromWallet } from '../services/walletImporter';
 import { initiateBankLink, getSavedBankConfigs, syncBankTransactions } from '../services/bankSyncService';
+import { ImportStackParamList } from '../navigation/AppNavigator';
 
+type ImportNav = NativeStackNavigationProp<ImportStackParamList, 'ImportHome'>;
 type ImportMethod = 'csv' | 'wallet' | 'bank' | null;
 
 export default function ImportScreen() {
+  const navigation = useNavigation<ImportNav>();
   const [activeMethod, setActiveMethod] = useState<ImportMethod>(null);
   const [loading, setLoading] = useState(false);
   const [walletJson, setWalletJson] = useState('');
@@ -21,11 +26,15 @@ export default function ImportScreen() {
     try {
       const res = await importCSVFile(undefined, defaultType);
       if (res.success) {
-        setResult({ inserted: res.inserted, duplicates: res.duplicates });
-        Alert.alert(
-          'Import Complete',
-          `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
-        );
+        if (res.reviewResult) {
+          navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
+        } else {
+          setResult({ inserted: res.inserted, duplicates: res.duplicates });
+          Alert.alert(
+            'Import Complete',
+            `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
+          );
+        }
       } else {
         Alert.alert('Import Failed', res.errors.join('\n'));
       }
@@ -45,12 +54,17 @@ export default function ImportScreen() {
     try {
       const res = await importFromWallet(walletJson, defaultType);
       if (res.success) {
-        setResult({ inserted: res.inserted, duplicates: res.duplicates });
-        Alert.alert(
-          'Import Complete',
-          `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
-        );
-        setWalletJson('');
+        if (res.reviewResult) {
+          navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
+          setWalletJson('');
+        } else {
+          setResult({ inserted: res.inserted, duplicates: res.duplicates });
+          Alert.alert(
+            'Import Complete',
+            `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
+          );
+          setWalletJson('');
+        }
       } else {
         Alert.alert('Import Failed', res.errors.join('\n'));
       }
@@ -66,7 +80,6 @@ export default function ImportScreen() {
     try {
       const configs = await getSavedBankConfigs();
       if (configs.length === 0) {
-        // No bank connected — initiate link flow
         const link = await initiateBankLink('plaid');
         if (link) {
           Alert.alert(
@@ -80,16 +93,19 @@ export default function ImportScreen() {
           );
         }
       } else {
-        // Sync existing connection
         const today = new Date().toISOString().split('T')[0];
         const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
         const res = await syncBankTransactions(configs[0], thirtyDaysAgo, today, defaultType);
         if (res.success) {
-          setResult({ inserted: res.inserted, duplicates: res.duplicates });
-          Alert.alert(
-            'Sync Complete',
-            `${res.inserted} new transactions, ${res.duplicates} duplicates skipped.`
-          );
+          if (res.reviewResult) {
+            navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
+          } else {
+            setResult({ inserted: res.inserted, duplicates: res.duplicates });
+            Alert.alert(
+              'Sync Complete',
+              `${res.inserted} new transactions, ${res.duplicates} duplicates skipped.`
+            );
+          }
         }
       }
     } catch (err: any) {
@@ -102,7 +118,7 @@ export default function ImportScreen() {
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Import Transactions</Text>
       <Text style={styles.subtitle}>
-        Import from multiple sources. Duplicates are automatically detected and skipped.
+        Import from multiple sources. Duplicates are automatically detected and flagged for review.
       </Text>
 
       {/* Default type toggle */}

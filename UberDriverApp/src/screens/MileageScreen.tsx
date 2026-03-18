@@ -1,30 +1,53 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, FlatList, Alert,
+  View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MileageTrip } from '../models/types';
-import { getMileageTrips } from '../services/database';
+import { getMileageTripsPaginated } from '../services/database';
 import { startTrip, stopTrip, getTrackingStatus } from '../services/mileageTracker';
 import { formatMiles, formatDateTime } from '../utils/helpers';
 import { MileageStackParamList } from '../navigation/AppNavigator';
 
 type MileageNav = NativeStackNavigationProp<MileageStackParamList, 'MileageHome'>;
 
+const PAGE_SIZE = 50;
+
+const TripItem = React.memo(({ item, onPress }: { item: MileageTrip; onPress: () => void }) => (
+  <TouchableOpacity style={styles.tripCard} onPress={onPress}>
+    <View style={styles.tripRow}>
+      <View>
+        <Text style={styles.tripDate}>{formatDateTime(item.startTime)}</Text>
+        <Text style={styles.tripPurpose}>{item.purpose.replace(/_/g, ' ')}</Text>
+      </View>
+      <Text style={styles.tripMiles}>{formatMiles(item.distanceMiles)}</Text>
+    </View>
+  </TouchableOpacity>
+));
+
 export default function MileageScreen() {
   const navigation = useNavigation<MileageNav>();
   const [trips, setTrips] = useState<MileageTrip[]>([]);
   const [tracking, setTracking] = useState(getTrackingStatus());
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const loadTrips = useCallback(async () => {
-    const data = await getMileageTrips();
-    setTrips(data);
+  const loadInitial = useCallback(async () => {
+    const result = await getMileageTripsPaginated(
+      undefined,
+      { limit: PAGE_SIZE, offset: 0 }
+    );
+    setTrips(result.data);
+    setHasMore(result.hasMore);
+    setOffset(result.data.length);
     setTracking(getTrackingStatus());
   }, []);
 
-  useFocusEffect(useCallback(() => { loadTrips(); }, [loadTrips]));
+  useFocusEffect(useCallback(() => { loadInitial(); }, [loadInitial]));
 
   // Live distance updates while tracking
   useEffect(() => {
@@ -38,6 +61,25 @@ export default function MileageScreen() {
     };
   }, [tracking.isTracking]);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadInitial();
+    setRefreshing(false);
+  };
+
+  const onEndReached = async () => {
+    if (!hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const result = await getMileageTripsPaginated(
+      undefined,
+      { limit: PAGE_SIZE, offset }
+    );
+    setTrips((prev) => [...prev, ...result.data]);
+    setHasMore(result.hasMore);
+    setOffset(offset + result.data.length);
+    setLoadingMore(false);
+  };
+
   const handleStart = async () => {
     const trip = await startTrip('uber_trip');
     if (!trip) {
@@ -45,7 +87,7 @@ export default function MileageScreen() {
       return;
     }
     setTracking(getTrackingStatus());
-    await loadTrips();
+    await loadInitial();
   };
 
   const handleStop = async () => {
@@ -57,26 +99,22 @@ export default function MileageScreen() {
         onPress: async () => {
           await stopTrip();
           setTracking(getTrackingStatus());
-          await loadTrips();
+          await loadInitial();
         },
       },
     ]);
   };
 
-  const renderTrip = ({ item }: { item: MileageTrip }) => (
-    <TouchableOpacity
-      style={styles.tripCard}
-      onPress={() => navigation.navigate('TripDetail', { tripId: item.id })}
-    >
-      <View style={styles.tripRow}>
-        <View>
-          <Text style={styles.tripDate}>{formatDateTime(item.startTime)}</Text>
-          <Text style={styles.tripPurpose}>{item.purpose.replace(/_/g, ' ')}</Text>
-        </View>
-        <Text style={styles.tripMiles}>{formatMiles(item.distanceMiles)}</Text>
+  const completedTrips = trips.filter((t) => !t.isActive);
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator color="#2196F3" />
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -105,10 +143,19 @@ export default function MileageScreen() {
       {/* Trip history */}
       <Text style={styles.historyHeader}>Trip History</Text>
       <FlatList
-        data={trips.filter((t) => !t.isActive)}
+        data={completedTrips}
         keyExtractor={(item) => item.id}
-        renderItem={renderTrip}
+        renderItem={({ item }) => (
+          <TripItem
+            item={item}
+            onPress={() => navigation.navigate('TripDetail', { tripId: item.id })}
+          />
+        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2196F3" />}
         contentContainerStyle={{ paddingBottom: 20 }}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No completed trips yet. Start your first trip above!</Text>
         }
@@ -144,4 +191,5 @@ const styles = StyleSheet.create({
   tripPurpose: { color: '#888', fontSize: 13, marginTop: 4, textTransform: 'capitalize' },
   tripMiles: { color: '#2196F3', fontSize: 18, fontWeight: '700' },
   emptyText: { color: '#666', textAlign: 'center', marginTop: 40, fontSize: 15 },
+  footerLoader: { padding: 16, alignItems: 'center' },
 });

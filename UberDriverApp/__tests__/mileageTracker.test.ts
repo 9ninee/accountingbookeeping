@@ -1,4 +1,5 @@
-import { haversineDistance } from '../src/services/mileageTracker';
+import { haversineDistance, douglasPeucker } from '../src/services/mileageTracker';
+import { RoutePoint } from '../src/models/types';
 
 describe('haversineDistance', () => {
   it('returns 0 for identical coordinates', () => {
@@ -19,5 +20,35 @@ describe('haversineDistance', () => {
     const distance = haversineDistance(40.7128, -74.0060, 40.7138, -74.0060);
     expect(distance).toBeGreaterThan(100);
     expect(distance).toBeLessThan(120);
+  });
+});
+
+describe('douglasPeucker', () => {
+  const makePoint = (lat: number, lon: number): RoutePoint => ({
+    latitude: lat,
+    longitude: lon,
+    timestamp: new Date().toISOString(),
+    speed: null,
+  });
+
+  it('handles empty array', () => {
+    expect(douglasPeucker([], 0.001).length).toBe(0);
+  });
+
+  it('handles single point', () => {
+    expect(douglasPeucker([makePoint(0, 0)], 0.001).length).toBe(1);
+  });
+
+  it('preserves two points', () => {
+    const pts = [makePoint(0, 0), makePoint(1, 1)];
+    expect(douglasPeucker(pts, 0.001).length).toBe(2);
+  });
+
+  it('reduces straight-line points to just endpoints', () => {
+    const pts = Array.from({ length: 50 }, (_, i) =>
+      makePoint(i * 0.001, i * 0.001)
+    );
+    const result = douglasPeucker(pts, 0.0001);
+    expect(result.length).toBe(2);
   });
 });
