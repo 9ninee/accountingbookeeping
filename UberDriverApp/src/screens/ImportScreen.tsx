@@ -8,6 +8,7 @@ import { importCSVFile } from '../services/csvImporter';
 import { importFromWallet } from '../services/walletImporter';
 import { initiateBankLink, getSavedBankConfigs, syncBankTransactions } from '../services/bankSyncService';
 import { ImportStackParamList } from '../navigation/AppNavigator';
+import { Colors } from '../theme/colors';
 
 type ImportNav = NativeStackNavigationProp<ImportStackParamList, 'ImportHome'>;
 type ImportMethod = 'csv' | 'wallet' | 'bank' | null;
@@ -30,10 +31,7 @@ export default function ImportScreen() {
           navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
         } else {
           setResult({ inserted: res.inserted, duplicates: res.duplicates });
-          Alert.alert(
-            'Import Complete',
-            `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
-          );
+          Alert.alert('Import Complete', `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`);
         }
       } else {
         Alert.alert('Import Failed', res.errors.join('\n'));
@@ -59,10 +57,7 @@ export default function ImportScreen() {
           setWalletJson('');
         } else {
           setResult({ inserted: res.inserted, duplicates: res.duplicates });
-          Alert.alert(
-            'Import Complete',
-            `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`
-          );
+          Alert.alert('Import Complete', `${res.inserted} transactions imported, ${res.duplicates} duplicates skipped.`);
           setWalletJson('');
         }
       } else {
@@ -82,15 +77,9 @@ export default function ImportScreen() {
       if (configs.length === 0) {
         const link = await initiateBankLink('plaid');
         if (link) {
-          Alert.alert(
-            'Connect Your Bank',
-            'Bank linking requires opening a secure browser window. This feature requires a backend server with Plaid/TrueLayer API keys configured.',
-          );
+          Alert.alert('Connect Your Bank', 'Bank linking requires opening a secure browser window. This feature requires a backend server with Plaid/TrueLayer API keys configured.');
         } else {
-          Alert.alert(
-            'Bank Sync Setup',
-            'To use bank sync, configure your backend server with Plaid or TrueLayer API credentials. See the README for setup instructions.'
-          );
+          Alert.alert('Bank Sync Setup', 'To use bank sync, configure your backend server with Plaid or TrueLayer API credentials.');
         }
       } else {
         const today = new Date().toISOString().split('T')[0];
@@ -101,10 +90,7 @@ export default function ImportScreen() {
             navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
           } else {
             setResult({ inserted: res.inserted, duplicates: res.duplicates });
-            Alert.alert(
-              'Sync Complete',
-              `${res.inserted} new transactions, ${res.duplicates} duplicates skipped.`
-            );
+            Alert.alert('Sync Complete', `${res.inserted} new transactions, ${res.duplicates} duplicates skipped.`);
           }
         }
       }
@@ -115,153 +101,300 @@ export default function ImportScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Header */}
+      <View style={styles.headerBadge}>
+        <Text style={styles.headerBadgeText}>DATA INGESTION</Text>
+      </View>
       <Text style={styles.header}>Import Transactions</Text>
       <Text style={styles.subtitle}>
-        Import from multiple sources. Duplicates are automatically detected and flagged for review.
+        Sync your driving revenue and expenses from external sources.
       </Text>
 
-      {/* Default type toggle */}
-      <Text style={styles.sectionLabel}>Default transaction type:</Text>
-      <View style={styles.toggleRow}>
+      {/* Business/Personal Toggle */}
+      <View style={styles.toggleWrap}>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, defaultType === 'business' && styles.toggleActive]}
+            onPress={() => setDefaultType('business')}
+          >
+            <Text style={[styles.toggleText, defaultType === 'business' && styles.toggleTextActive]}>
+              BUSINESS
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, defaultType === 'personal' && styles.toggleActiveP]}
+            onPress={() => setDefaultType('personal')}
+          >
+            <Text style={[styles.toggleText, defaultType === 'personal' && styles.toggleTextActive]}>
+              PERSONAL
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Import Methods */}
+      <View style={styles.methodsCard}>
+        {/* CSV */}
         <TouchableOpacity
-          style={[styles.toggleBtn, defaultType === 'business' && styles.toggleActive]}
-          onPress={() => setDefaultType('business')}
+          style={[styles.methodRow, activeMethod === 'csv' && styles.methodRowActive]}
+          onPress={() => setActiveMethod(activeMethod === 'csv' ? null : 'csv')}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.toggleText, defaultType === 'business' && styles.toggleTextActive]}>Business</Text>
+          <View style={styles.methodLeft}>
+            <View style={[styles.methodIconWrap, { borderColor: Colors.primary + '1A' }]}>
+              <Text style={[styles.methodIconText, { color: Colors.primary }]}>CSV</Text>
+            </View>
+            <View>
+              <Text style={styles.methodTitle}>CSV File</Text>
+              <Text style={styles.methodDesc}>MANUAL UPLOAD</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.methodBtn, { borderColor: Colors.primary + '33' }]}
+            onPress={handleCSVImport}
+            disabled={loading}
+          >
+            {loading && activeMethod === 'csv' ? (
+              <ActivityIndicator color={Colors.primary} size="small" />
+            ) : (
+              <Text style={[styles.methodBtnText, { color: Colors.primary }]}>Import</Text>
+            )}
+          </TouchableOpacity>
         </TouchableOpacity>
+
+        {/* Wallet */}
+        <View style={styles.methodDivider} />
         <TouchableOpacity
-          style={[styles.toggleBtn, defaultType === 'personal' && styles.toggleActiveP]}
-          onPress={() => setDefaultType('personal')}
+          style={[styles.methodRow, activeMethod === 'wallet' && styles.methodRowActive]}
+          onPress={() => setActiveMethod(activeMethod === 'wallet' ? null : 'wallet')}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.toggleText, defaultType === 'personal' && styles.toggleTextActive]}>Personal</Text>
+          <View style={styles.methodLeft}>
+            <View style={[styles.methodIconWrap, { borderColor: Colors.secondary + '1A' }]}>
+              <Text style={[styles.methodIconText, { color: Colors.secondary }]}>W</Text>
+            </View>
+            <View>
+              <Text style={styles.methodTitle}>Apple Wallet</Text>
+              <Text style={styles.methodDesc}>AUTO-DETECTION</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.methodBtn, { borderColor: Colors.secondary + '33' }]}
+            onPress={() => setActiveMethod('wallet')}
+          >
+            <Text style={[styles.methodBtnText, { color: Colors.secondary }]}>Sync</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        {activeMethod === 'wallet' && (
+          <View style={styles.walletInput}>
+            <TextInput
+              style={styles.jsonInput}
+              value={walletJson}
+              onChangeText={setWalletJson}
+              placeholder='Paste wallet JSON data here...'
+              placeholderTextColor={Colors.onSurfaceVariant + '4D'}
+              multiline
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={styles.importBtn}
+              onPress={handleWalletImport}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.importBtnText}>Import Wallet Data</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Bank Sync */}
+        <View style={styles.methodDivider} />
+        <TouchableOpacity
+          style={[styles.methodRow, activeMethod === 'bank' && styles.methodRowActive]}
+          onPress={() => setActiveMethod(activeMethod === 'bank' ? null : 'bank')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.methodLeft}>
+            <View style={[styles.methodIconWrap, { borderColor: Colors.tertiary + '1A' }]}>
+              <Text style={[styles.methodIconText, { color: Colors.tertiary }]}>B</Text>
+            </View>
+            <View>
+              <Text style={styles.methodTitle}>Bank Sync</Text>
+              <Text style={styles.methodDesc}>REAL-TIME PLAID</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.methodBtn, { borderColor: Colors.tertiary + '33' }]}
+            onPress={handleBankSync}
+            disabled={loading}
+          >
+            {loading && activeMethod === 'bank' ? (
+              <ActivityIndicator color={Colors.tertiary} size="small" />
+            ) : (
+              <Text style={[styles.methodBtnText, { color: Colors.tertiary }]}>Connect</Text>
+            )}
+          </TouchableOpacity>
         </TouchableOpacity>
       </View>
 
-      {/* Import method cards */}
-      <ImportMethodCard
-        title="CSV File Import"
-        description="Import transactions from a bank statement CSV file. Auto-detects columns."
-        icon="[CSV]"
-        active={activeMethod === 'csv'}
-        onPress={() => setActiveMethod(activeMethod === 'csv' ? null : 'csv')}
-      />
-      {activeMethod === 'csv' && (
-        <View style={styles.methodContent}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleCSVImport} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Select CSV File</Text>}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <ImportMethodCard
-        title="Apple Wallet / Google Pay"
-        description="Paste exported transaction data from your wallet app (JSON format via Shortcuts)."
-        icon="[WAL]"
-        active={activeMethod === 'wallet'}
-        onPress={() => setActiveMethod(activeMethod === 'wallet' ? null : 'wallet')}
-      />
-      {activeMethod === 'wallet' && (
-        <View style={styles.methodContent}>
-          <TextInput
-            style={styles.jsonInput}
-            value={walletJson}
-            onChangeText={setWalletJson}
-            placeholder='Paste wallet JSON data here...'
-            placeholderTextColor="#555"
-            multiline
-            textAlignVertical="top"
-          />
-          <TouchableOpacity style={styles.actionBtn} onPress={handleWalletImport} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Import Wallet Data</Text>}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <ImportMethodCard
-        title="Bank Account Sync"
-        description="Connect your bank account via Plaid or TrueLayer for automatic transaction sync."
-        icon="[BNK]"
-        active={activeMethod === 'bank'}
-        onPress={() => setActiveMethod(activeMethod === 'bank' ? null : 'bank')}
-      />
-      {activeMethod === 'bank' && (
-        <View style={styles.methodContent}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleBankSync} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Sync Bank Transactions</Text>}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Result display */}
+      {/* Import Summary */}
       {result && (
         <View style={styles.resultCard}>
-          <Text style={styles.resultTitle}>Last Import Result</Text>
-          <Text style={styles.resultText}>{result.inserted} transactions imported</Text>
-          <Text style={styles.resultText}>{result.duplicates} duplicates detected & skipped</Text>
+          <View style={styles.resultHeader}>
+            <View>
+              <Text style={styles.resultTitle}>Import Summary</Text>
+              <Text style={styles.resultSubtitle}>Last activity: just now</Text>
+            </View>
+            <View style={styles.resultIconWrap}>
+              <Text style={styles.resultIcon}>OK</Text>
+            </View>
+          </View>
+          <View style={styles.resultGrid}>
+            <View style={[styles.resultStat, { borderLeftColor: Colors.primary }]}>
+              <Text style={styles.resultStatLabel}>PROCESSED</Text>
+              <View style={styles.resultStatRow}>
+                <Text style={[styles.resultStatValue, { color: Colors.primary }]}>{result.inserted}</Text>
+                <Text style={styles.resultStatUnit}>txns</Text>
+              </View>
+            </View>
+            <View style={[styles.resultStat, { borderLeftColor: Colors.error }]}>
+              <Text style={styles.resultStatLabel}>DUPLICATES</Text>
+              <View style={styles.resultStatRow}>
+                <Text style={[styles.resultStatValue, { color: Colors.error }]}>{result.duplicates}</Text>
+                <Text style={styles.resultStatUnit}>skipped</Text>
+              </View>
+            </View>
+          </View>
         </View>
       )}
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
-function ImportMethodCard({
-  title, description, icon, active, onPress,
-}: {
-  title: string; description: string; icon: string; active: boolean; onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.methodCard, active && styles.methodCardActive]}
-      onPress={onPress}
-    >
-      <Text style={styles.methodIcon}>{icon}</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.methodTitle}>{title}</Text>
-        <Text style={styles.methodDesc}>{description}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23', padding: 16 },
-  header: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
-  subtitle: { color: '#888', fontSize: 14, marginBottom: 20, lineHeight: 20 },
-  sectionLabel: { color: '#ccc', fontSize: 14, marginBottom: 8 },
-  toggleRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+
+  // Header
+  headerBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primaryContainer + '33',
+    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
+    marginTop: 16, marginBottom: 12,
+  },
+  headerBadgeText: {
+    fontSize: 10, fontWeight: '700', color: Colors.primary,
+    letterSpacing: 2, textTransform: 'uppercase',
+  },
+  header: { fontSize: 28, fontWeight: '700', color: Colors.onSurface, marginBottom: 8 },
+  subtitle: { color: Colors.onSurfaceVariant, fontSize: 14, marginBottom: 24, lineHeight: 20 },
+
+  // Toggle
+  toggleWrap: { alignItems: 'center', marginBottom: 24 },
+  toggleRow: {
+    flexDirection: 'row', padding: 6,
+    backgroundColor: Colors.surfaceContainerLow, borderRadius: 24,
+    width: '80%',
+  },
   toggleBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center',
-    backgroundColor: '#1a1a2e', borderWidth: 1, borderColor: '#333',
+    flex: 1, paddingVertical: 10, borderRadius: 20, alignItems: 'center',
   },
-  toggleActive: { backgroundColor: '#1B5E20', borderColor: '#4CAF50' },
-  toggleActiveP: { backgroundColor: '#E65100', borderColor: '#FF9800' },
-  toggleText: { color: '#888', fontWeight: '600' },
+  toggleActive: {
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  toggleActiveP: {
+    backgroundColor: Colors.tertiary,
+  },
+  toggleText: {
+    color: Colors.onSurfaceVariant, fontWeight: '700', fontSize: 12, letterSpacing: 1,
+  },
   toggleTextActive: { color: '#fff' },
-  methodCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a2e',
-    borderRadius: 12, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: '#333', gap: 14,
+
+  // Methods Card
+  methodsCard: {
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant + '1A',
+    marginBottom: 24,
   },
-  methodCardActive: { borderColor: '#4CAF50' },
-  methodIcon: { color: '#4CAF50', fontSize: 16, fontWeight: '700', width: 40, textAlign: 'center' },
-  methodTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  methodDesc: { color: '#888', fontSize: 13, marginTop: 4, lineHeight: 18 },
-  methodContent: { backgroundColor: '#1a1a2e', borderRadius: 12, padding: 16, marginBottom: 12 },
-  actionBtn: {
-    backgroundColor: '#4CAF50', borderRadius: 10, paddingVertical: 14, alignItems: 'center',
+  methodRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 20,
   },
-  actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  methodRowActive: { backgroundColor: Colors.surfaceContainer },
+  methodLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  methodIconWrap: {
+    width: 48, height: 48, borderRadius: 16,
+    backgroundColor: Colors.surfaceContainerHigh,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1,
+  },
+  methodIconText: { fontSize: 14, fontWeight: '700' },
+  methodTitle: { fontSize: 16, fontWeight: '700', color: Colors.onSurface },
+  methodDesc: {
+    fontSize: 10, fontWeight: '600', color: Colors.onSurfaceVariant,
+    letterSpacing: 1.5, marginTop: 2,
+  },
+  methodBtn: {
+    paddingHorizontal: 20, paddingVertical: 8, borderRadius: 16,
+    backgroundColor: Colors.surfaceBright + '1A',
+    borderWidth: 1,
+  },
+  methodBtnText: { fontSize: 12, fontWeight: '700' },
+  methodDivider: {
+    height: 1, backgroundColor: Colors.outlineVariant + '1A', marginHorizontal: 20,
+  },
+
+  // Wallet Input
+  walletInput: { paddingHorizontal: 20, paddingBottom: 20 },
   jsonInput: {
-    backgroundColor: '#0f0f23', borderRadius: 10, padding: 14, color: '#fff',
-    fontSize: 14, borderWidth: 1, borderColor: '#333', height: 120, marginBottom: 12,
-    fontFamily: 'monospace',
+    backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 14,
+    color: Colors.onSurface, fontSize: 14, height: 100, marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.outlineVariant + '1A',
   },
+  importBtn: {
+    backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
+  },
+  importBtnText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '600' },
+
+  // Result Card
   resultCard: {
-    backgroundColor: '#1a1a2e', borderRadius: 12, padding: 16, marginTop: 20,
-    borderWidth: 1, borderColor: '#4CAF50',
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 24, padding: 24,
+    borderWidth: 1, borderColor: Colors.outlineVariant + '1A',
+    overflow: 'hidden',
   },
-  resultTitle: { color: '#4CAF50', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  resultText: { color: '#ccc', fontSize: 14, marginBottom: 4 },
+  resultHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  resultTitle: { fontSize: 20, fontWeight: '700', color: Colors.onSurface, marginBottom: 4 },
+  resultSubtitle: { fontSize: 12, color: Colors.onSurfaceVariant },
+  resultIconWrap: {
+    backgroundColor: Colors.primary + '1A', padding: 8, borderRadius: 12,
+  },
+  resultIcon: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  resultGrid: { flexDirection: 'row', gap: 12 },
+  resultStat: {
+    flex: 1, backgroundColor: Colors.surfaceContainerLowest,
+    borderRadius: 20, padding: 16, borderLeftWidth: 4,
+  },
+  resultStatLabel: {
+    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    letterSpacing: 1, marginBottom: 8,
+  },
+  resultStatRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  resultStatValue: { fontSize: 28, fontWeight: '700' },
+  resultStatUnit: { fontSize: 10, color: Colors.onSurfaceVariant },
 });

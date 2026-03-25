@@ -7,6 +7,7 @@ import { ImportReviewResult, ImportReviewItem, Transaction } from '../models/typ
 import { insertTransactionBatch } from '../services/database';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { ImportStackParamList } from '../navigation/AppNavigator';
+import { Colors } from '../theme/colors';
 
 type ReviewRoute = RouteProp<ImportStackParamList, 'ImportReview'>;
 
@@ -63,55 +64,87 @@ export default function ImportReviewScreen() {
     title: string,
     count: number,
     color: string,
+    badgeLabel: string,
     section: 'new' | 'duplicate' | 'conflict'
   ) => (
     <TouchableOpacity
-      style={[styles.summaryCard, { borderColor: color }]}
+      style={styles.summaryCard}
       onPress={() => setExpandedSection(expandedSection === section ? null : section)}
+      activeOpacity={0.7}
     >
-      <Text style={[styles.summaryCount, { color }]}>{count}</Text>
+      <View style={styles.summaryCardTop}>
+        <Text style={[styles.summaryIcon, { color }]}>
+          {section === 'new' ? '+' : section === 'duplicate' ? '=' : '!'}
+        </Text>
+        <View style={[styles.summaryBadge, { backgroundColor: color + '1A' }]}>
+          <Text style={[styles.summaryBadgeText, { color }]}>{badgeLabel}</Text>
+        </View>
+      </View>
+      <Text style={styles.summaryCount}>{count}</Text>
       <Text style={styles.summaryLabel}>{title}</Text>
-      <Text style={styles.expandIcon}>{expandedSection === section ? '▼' : '▶'}</Text>
     </TouchableOpacity>
   );
 
   const renderItem = ({ item, index }: { item: ImportReviewItem; index: number }) => (
-    <View style={styles.itemCard}>
+    <View style={[styles.itemCard, { borderWidth: 1, borderColor: Colors.outlineVariant + '1A' }]}>
       <View style={styles.itemRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.itemDesc} numberOfLines={1}>
-            {item.transaction.description || 'Unknown'}
+        <View style={styles.itemLeft}>
+          <View style={[styles.itemIconWrap, {
+            backgroundColor: item.status === 'conflict' ? Colors.error + '1A' :
+              item.status === 'duplicate' ? Colors.tertiary + '1A' : Colors.primary + '1A',
+          }]}>
+            <Text style={[styles.itemIconText, {
+              color: item.status === 'conflict' ? Colors.error :
+                item.status === 'duplicate' ? Colors.tertiary : Colors.primary,
+            }]}>
+              {item.status === 'conflict' ? '!' : item.status === 'duplicate' ? 'D' : 'N'}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.itemDesc} numberOfLines={1}>
+              {item.transaction.description || 'Unknown'}
+            </Text>
+            <Text style={styles.itemMeta}>
+              {formatDate(item.transaction.date || '')} {item.transaction.importSource ? `\u2022 ${item.transaction.importSource.replace(/_/g, ' ')}` : ''}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.itemAmountWrap}>
+          <Text style={[styles.itemAmount, {
+            color: (item.transaction.amount ?? 0) >= 0 ? Colors.primary : Colors.error,
+          }]}>
+            {formatCurrency(item.transaction.amount ?? 0)}
           </Text>
-          <Text style={styles.itemMeta}>
-            {formatDate(item.transaction.date || '')} · {item.transaction.importSource?.replace(/_/g, ' ')}
+          {item.status === 'conflict' && (
+            <Text style={styles.conflictLabel}>
+              {item.conflictDetails?.includes('Amount') ? 'AMOUNT MISMATCH' : 'NEEDS REVIEW'}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {item.status === 'duplicate' && item.duplicateMatch && (
+        <View style={styles.dupInfo}>
+          <Text style={styles.dupReason}>
+            {item.duplicateMatch.reason} ({Math.round(item.duplicateMatch.confidence * 100)}% confidence)
           </Text>
         </View>
-        <Text style={[styles.itemAmount, {
-          color: (item.transaction.amount ?? 0) >= 0 ? '#4CAF50' : '#FF5722',
-        }]}>
-          {formatCurrency(item.transaction.amount ?? 0)}
-        </Text>
-      </View>
-      {item.status === 'duplicate' && item.duplicateMatch && (
-        <Text style={styles.dupReason}>
-          {item.duplicateMatch.reason} ({Math.round(item.duplicateMatch.confidence * 100)}% match)
-        </Text>
       )}
+
       {item.status === 'conflict' && (
         <View style={styles.conflictActions}>
-          <Text style={styles.conflictText}>{item.conflictDetails || 'Needs review'}</Text>
           <View style={styles.conflictButtons}>
             <TouchableOpacity
-              style={[styles.conflictBtn, item.userAction === 'accept' && styles.acceptBtn]}
-              onPress={() => handleConflictAction(index, 'accept')}
-            >
-              <Text style={styles.conflictBtnText}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.conflictBtn, item.userAction === 'reject' && styles.rejectBtn]}
+              style={[styles.conflictBtn, styles.rejectBtn, item.userAction === 'reject' && styles.rejectBtnActive]}
               onPress={() => handleConflictAction(index, 'reject')}
             >
               <Text style={styles.conflictBtnText}>Reject</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.conflictBtn, styles.acceptBtn, item.userAction === 'accept' && styles.acceptBtnActive]}
+              onPress={() => handleConflictAction(index, 'accept')}
+            >
+              <Text style={styles.conflictBtnText}>Accept</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -130,33 +163,45 @@ export default function ImportReviewScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <Text style={styles.header}>Import Review</Text>
-      <Text style={styles.subtitle}>
-        Review before committing to database
-      </Text>
+      <Text style={styles.subtitle}>Review before committing to database.</Text>
 
-      {/* Summary cards */}
+      {/* Summary Cards */}
       <View style={styles.summaryRow}>
-        {renderSummaryCard('New', reviewResult.summary.newCount, '#4CAF50', 'new')}
-        {renderSummaryCard('Duplicates', reviewResult.summary.duplicateCount, '#FF9800', 'duplicate')}
-        {renderSummaryCard('Conflicts', reviewResult.summary.conflictCount, '#FF5722', 'conflict')}
+        {renderSummaryCard('Ready for import', reviewResult.summary.newCount, Colors.primary, 'New', 'new')}
+        {renderSummaryCard('Auto-skipped', reviewResult.summary.duplicateCount, Colors.tertiary, 'Duplicates', 'duplicate')}
+        {renderSummaryCard('Manual action required', reviewResult.summary.conflictCount, Colors.error, 'Conflicts', 'conflict')}
       </View>
 
-      {/* Expanded section */}
+      {/* Expanded Section */}
       {expandedSection && (
-        <FlatList
-          data={getExpandedData()}
-          keyExtractor={(_, idx) => `${expandedSection}-${idx}`}
-          renderItem={renderItem}
-          style={styles.itemList}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No items in this category</Text>
-          }
-        />
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              {expandedSection === 'new' ? 'New Transactions' :
+                expandedSection === 'duplicate' ? 'Potential Duplicates' : 'Conflicts'}
+            </Text>
+            {expandedSection === 'conflict' && conflictItems.length > 0 && (
+              <View style={styles.actionBadge}>
+                <Text style={styles.actionBadgeText}>Action Required</Text>
+              </View>
+            )}
+          </View>
+          <FlatList
+            data={getExpandedData()}
+            keyExtractor={(_, idx) => `${expandedSection}-${idx}`}
+            renderItem={renderItem}
+            style={styles.itemList}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No items in this category</Text>
+            }
+          />
+        </>
       )}
 
-      {/* Action bar */}
+      {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -165,13 +210,17 @@ export default function ImportReviewScreen() {
           style={[styles.confirmBtn, committing && styles.disabledBtn]}
           onPress={handleConfirmImport}
           disabled={committing}
+          activeOpacity={0.85}
         >
           {committing ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.confirmBtnText}>
-              Confirm Import ({newItems.length})
-            </Text>
+            <View style={styles.confirmBtnInner}>
+              <Text style={styles.confirmBtnText}>Confirm Import</Text>
+              <View style={styles.confirmCount}>
+                <Text style={styles.confirmCountText}>{newItems.length}</Text>
+              </View>
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -180,51 +229,93 @@ export default function ImportReviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23', padding: 16 },
-  header: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 4 },
-  subtitle: { color: '#888', fontSize: 14, marginBottom: 16 },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16, paddingTop: 8 },
+  header: { fontSize: 32, fontWeight: '800', color: Colors.onSurface, marginBottom: 4 },
+  subtitle: { color: Colors.onSurfaceVariant, fontSize: 16, marginBottom: 24 },
+
+  // Summary Cards
+  summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   summaryCard: {
-    flex: 1, backgroundColor: '#1a1a2e', borderRadius: 12, padding: 14,
-    alignItems: 'center', borderWidth: 1,
+    flex: 1, backgroundColor: Colors.surfaceContainerLow, borderRadius: 16, padding: 20,
+    borderLeftWidth: 4, borderLeftColor: Colors.primary,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12,
+    elevation: 6,
   },
-  summaryCount: { fontSize: 28, fontWeight: '700' },
-  summaryLabel: { color: '#888', fontSize: 12, marginTop: 4 },
-  expandIcon: { color: '#555', fontSize: 10, marginTop: 6 },
+  summaryCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  summaryIcon: { fontSize: 20, fontWeight: '700' },
+  summaryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  summaryBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  summaryCount: { fontSize: 28, fontWeight: '700', color: Colors.onSurface },
+  summaryLabel: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 4 },
+
+  // Section
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: Colors.onSurface },
+  actionBadge: { backgroundColor: Colors.error, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  actionBadgeText: { color: Colors.onError, fontSize: 10, fontWeight: '700' },
+
+  // Items
   itemList: { flex: 1, marginBottom: 12 },
   itemCard: {
-    backgroundColor: '#1a1a2e', borderRadius: 10, padding: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: '#333',
+    backgroundColor: Colors.surfaceContainer, borderRadius: 16, padding: 20, marginBottom: 10,
+    overflow: 'hidden',
   },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  itemDesc: { color: '#fff', fontSize: 15, fontWeight: '500', marginBottom: 4 },
-  itemMeta: { color: '#888', fontSize: 12 },
-  itemAmount: { fontSize: 16, fontWeight: '700', marginLeft: 8 },
-  dupReason: { color: '#FF9800', fontSize: 12, marginTop: 8, fontStyle: 'italic' },
-  conflictActions: { marginTop: 8 },
-  conflictText: { color: '#FF5722', fontSize: 12, marginBottom: 8 },
+  itemLeft: { flexDirection: 'row', gap: 14, flex: 1 },
+  itemIconWrap: {
+    width: 48, height: 48, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  itemIconText: { fontSize: 18, fontWeight: '700' },
+  itemDesc: { color: Colors.onSurface, fontSize: 15, fontWeight: '600', marginBottom: 4 },
+  itemMeta: { color: Colors.onSurfaceVariant, fontSize: 12 },
+  itemAmountWrap: { alignItems: 'flex-end' },
+  itemAmount: { fontSize: 18, fontWeight: '700' },
+  conflictLabel: {
+    fontSize: 10, fontWeight: '700', color: Colors.error,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4,
+  },
+
+  // Duplicate
+  dupInfo: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.outlineVariant + '1A' },
+  dupReason: { color: Colors.tertiary, fontSize: 12, fontStyle: 'italic' },
+
+  // Conflict
+  conflictActions: { marginTop: 12 },
   conflictButtons: { flexDirection: 'row', gap: 8 },
   conflictBtn: {
-    flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center',
-    backgroundColor: '#333',
+    flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center',
   },
-  acceptBtn: { backgroundColor: '#1B5E20' },
-  rejectBtn: { backgroundColor: '#B71C1C' },
-  conflictBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  emptyText: { color: '#666', textAlign: 'center', marginTop: 30 },
+  rejectBtn: { backgroundColor: Colors.surfaceContainerHigh },
+  rejectBtnActive: { backgroundColor: Colors.errorContainer },
+  acceptBtn: { backgroundColor: Colors.primary },
+  acceptBtnActive: { backgroundColor: Colors.primary },
+  conflictBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  // Empty
+  emptyText: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 30 },
+
+  // Action Bar
   actionBar: {
-    flexDirection: 'row', gap: 12, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: '#333',
+    flexDirection: 'row', gap: 12, paddingVertical: 16,
+    borderTopWidth: 1, borderTopColor: Colors.outlineVariant + '1A',
   },
   cancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
-    backgroundColor: '#333',
+    paddingVertical: 14, paddingHorizontal: 24, borderRadius: 16, alignItems: 'center',
   },
-  cancelBtnText: { color: '#ccc', fontSize: 16, fontWeight: '600' },
+  cancelBtnText: { color: Colors.onSurfaceVariant, fontSize: 16, fontWeight: '600' },
   confirmBtn: {
-    flex: 2, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
-    backgroundColor: '#4CAF50',
+    flex: 1, paddingVertical: 14, borderRadius: 16, alignItems: 'center',
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20,
+    elevation: 8,
   },
-  confirmBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  confirmBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  confirmBtnText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '700' },
+  confirmCount: {
+    backgroundColor: Colors.onPrimary + '33', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4,
+  },
+  confirmCountText: { color: Colors.onPrimary, fontSize: 12, fontWeight: '700' },
   disabledBtn: { opacity: 0.5 },
 });

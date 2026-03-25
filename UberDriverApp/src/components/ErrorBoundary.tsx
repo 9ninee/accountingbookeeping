@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Colors } from '../theme/colors';
 
 interface Props {
   children: ReactNode;
@@ -29,7 +30,9 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <Text style={styles.icon}>!</Text>
+          <View style={styles.iconWrap}>
+            <Text style={styles.icon}>!</Text>
+          </View>
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.message}>
             The app encountered an unexpected error. Your data is safe.
@@ -39,7 +42,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               {this.state.error.message}
             </Text>
           )}
-          <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
+          <TouchableOpacity style={styles.button} onPress={this.handleRestart} activeOpacity={0.85}>
             <Text style={styles.buttonText}>Restart App</Text>
           </TouchableOpacity>
         </View>
@@ -52,23 +55,34 @@ export default class ErrorBoundary extends Component<Props, State> {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: '#0f0f23', justifyContent: 'center', alignItems: 'center',
+    flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center',
     padding: 32,
   },
-  icon: {
-    fontSize: 48, fontWeight: '700', color: '#FF5722', marginBottom: 16,
-    width: 72, height: 72, lineHeight: 72, textAlign: 'center',
-    borderRadius: 36, borderWidth: 3, borderColor: '#FF5722',
+  iconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    borderWidth: 3, borderColor: Colors.error,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 20,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 12 },
-  message: { color: '#888', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
+  icon: { fontSize: 36, fontWeight: '700', color: Colors.error },
+  title: { fontSize: 24, fontWeight: '700', color: Colors.onSurface, marginBottom: 12 },
+  message: {
+    color: Colors.onSurfaceVariant, fontSize: 16, textAlign: 'center',
+    lineHeight: 24, marginBottom: 20,
+  },
   errorDetail: {
-    color: '#FF5722', fontSize: 12, fontFamily: 'monospace',
-    backgroundColor: '#1a1a2e', padding: 12, borderRadius: 8,
+    color: Colors.error, fontSize: 12, fontFamily: 'monospace',
+    backgroundColor: Colors.surfaceContainer, padding: 12, borderRadius: 12,
     marginBottom: 20, maxWidth: '100%',
   },
   button: {
-    backgroundColor: '#4CAF50', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 40,
+    backgroundColor: Colors.primary, borderRadius: 16,
+    paddingVertical: 16, paddingHorizontal: 40,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  buttonText: { color: Colors.onPrimary, fontSize: 17, fontWeight: '700' },
 });

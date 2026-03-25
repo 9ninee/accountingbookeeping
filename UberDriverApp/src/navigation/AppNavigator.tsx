@@ -2,8 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ImportReviewResult } from '../models/types';
+import { Colors } from '../theme/colors';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import MileageScreen from '../screens/MileageScreen';
@@ -42,21 +43,20 @@ const TransactionsStack = createNativeStackNavigator<TransactionsStackParamList>
 const MileageStack = createNativeStackNavigator<MileageStackParamList>();
 const ImportStack = createNativeStackNavigator<ImportStackParamList>();
 
+const TAB_ICONS: Record<string, string> = {
+  Dashboard: 'dashboard',
+  Mileage: 'speed',
+  Transactions: 'receipt_long',
+  Import: 'cloud_upload',
+};
+
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Dashboard: 'D',
-    Mileage: 'M',
-    Transactions: 'T',
-    Import: 'I',
-  };
   return (
-    <Text style={{
-      fontSize: 20,
-      fontWeight: focused ? '700' : '400',
-      color: focused ? '#4CAF50' : '#888',
-    }}>
-      {icons[label] || label[0]}
-    </Text>
+    <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
+      <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
+        {label[0]}
+      </Text>
+    </View>
   );
 }
 
@@ -64,8 +64,10 @@ function TransactionsNavigator() {
   return (
     <TransactionsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#1a1a2e' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.primary,
+        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        contentStyle: { backgroundColor: Colors.background },
       }}
     >
       <TransactionsStack.Screen
@@ -91,8 +93,10 @@ function MileageNavigator() {
   return (
     <MileageStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#1a1a2e' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.primary,
+        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        contentStyle: { backgroundColor: Colors.background },
       }}
     >
       <MileageStack.Screen
@@ -113,8 +117,10 @@ function ImportNavigator() {
   return (
     <ImportStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#1a1a2e' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.primary,
+        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        contentStyle: { backgroundColor: Colors.background },
       }}
     >
       <ImportStack.Screen
@@ -136,11 +142,33 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
-          headerStyle: { backgroundColor: '#1a1a2e' },
-          headerTintColor: '#fff',
-          tabBarStyle: { backgroundColor: '#1a1a2e', borderTopColor: '#333' },
-          tabBarActiveTintColor: '#4CAF50',
-          tabBarInactiveTintColor: '#888',
+          headerStyle: { backgroundColor: Colors.background },
+          headerTintColor: Colors.primary,
+          headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+          tabBarStyle: {
+            backgroundColor: Colors.surfaceContainerLow + 'D9', // 85% opacity
+            borderTopWidth: 0,
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            paddingTop: 8,
+            paddingBottom: 8,
+            height: 70,
+            position: 'absolute',
+            elevation: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 24,
+          },
+          tabBarActiveTintColor: Colors.primary,
+          tabBarInactiveTintColor: Colors.onSurfaceVariant + '99',
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            marginTop: 2,
+          },
           tabBarIcon: ({ focused }) => (
             <TabIcon label={route.name.replace('Tab', '')} focused={focused} />
           ),
@@ -149,7 +177,7 @@ export default function AppNavigator() {
         <Tab.Screen
           name="DashboardTab"
           component={DashboardScreen}
-          options={{ title: 'Dashboard' }}
+          options={{ title: 'Dashboard', headerTitle: 'Financial Cockpit' }}
         />
         <Tab.Screen
           name="MileageTab"
@@ -170,3 +198,27 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconWrap: {
+    width: 36,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabIconWrapActive: {
+    backgroundColor: Colors.surfaceContainer,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+  },
+  tabIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.onSurfaceVariant + '99',
+  },
+  tabIconTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+});

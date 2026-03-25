@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Transaction, TransactionType, TransactionCategory } from '../models/types';
 import { insertTransaction } from '../services/database';
 import { generateId } from '../utils/helpers';
+import { Colors } from '../theme/colors';
 
 const CATEGORIES: { label: string; value: TransactionCategory }[] = [
   { label: 'Fuel', value: 'fuel' },
@@ -50,7 +51,7 @@ export default function AddTransactionScreen() {
       id: generateId(),
       date: now.split('T')[0],
       description: description.trim(),
-      amount: -Math.abs(parseFloat(amount)), // expenses are negative
+      amount: -Math.abs(parseFloat(amount)),
       currency: 'USD',
       type,
       category,
@@ -60,6 +61,9 @@ export default function AddTransactionScreen() {
       notes: notes.trim() || null,
       isDuplicate: false,
       duplicateOfId: null,
+      dedupHash: null,
+      validationStatus: 'verified',
+      matchedSourceIds: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -75,9 +79,9 @@ export default function AddTransactionScreen() {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Type toggle */}
-      <Text style={styles.label}>Type</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Type Toggle */}
+      <Text style={styles.label}>TYPE</Text>
       <View style={styles.toggleRow}>
         <TouchableOpacity
           style={[styles.toggleBtn, type === 'business' && styles.toggleActive]}
@@ -94,28 +98,28 @@ export default function AddTransactionScreen() {
       </View>
 
       {/* Description */}
-      <Text style={styles.label}>Description</Text>
+      <Text style={styles.label}>DESCRIPTION</Text>
       <TextInput
         style={styles.input}
         value={description}
         onChangeText={setDescription}
         placeholder="e.g. Shell Gas Station"
-        placeholderTextColor="#555"
+        placeholderTextColor={Colors.onSurfaceVariant + '4D'}
       />
 
       {/* Amount */}
-      <Text style={styles.label}>Amount ($)</Text>
+      <Text style={styles.label}>AMOUNT ($)</Text>
       <TextInput
         style={styles.input}
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
-        placeholderTextColor="#555"
+        placeholderTextColor={Colors.onSurfaceVariant + '4D'}
         keyboardType="decimal-pad"
       />
 
       {/* Category */}
-      <Text style={styles.label}>Category</Text>
+      <Text style={styles.label}>CATEGORY</Text>
       <View style={styles.categoryGrid}>
         {filteredCategories.map((cat) => (
           <TouchableOpacity
@@ -131,54 +135,71 @@ export default function AddTransactionScreen() {
       </View>
 
       {/* Notes */}
-      <Text style={styles.label}>Notes (optional)</Text>
+      <Text style={styles.label}>NOTES (OPTIONAL)</Text>
       <TextInput
-        style={[styles.input, { height: 80 }]}
+        style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
         value={notes}
         onChangeText={setNotes}
         placeholder="Any additional notes..."
-        placeholderTextColor="#555"
+        placeholderTextColor={Colors.onSurfaceVariant + '4D'}
         multiline
-        textAlignVertical="top"
       />
 
       {/* Save */}
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.85}>
         <Text style={styles.saveBtnText}>Save Transaction</Text>
       </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23', padding: 16 },
-  label: { color: '#ccc', fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+  label: {
+    color: Colors.onSurfaceVariant, fontSize: 11, fontWeight: '700',
+    marginTop: 20, marginBottom: 10, letterSpacing: 1.5,
+  },
   input: {
-    backgroundColor: '#1a1a2e', borderRadius: 10, padding: 14, color: '#fff',
-    fontSize: 16, borderWidth: 1, borderColor: '#333',
+    backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 16,
+    color: Colors.onSurface, fontSize: 16,
+    borderWidth: 1, borderColor: Colors.outlineVariant + '1A',
   },
   toggleRow: { flexDirection: 'row', gap: 12 },
   toggleBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
-    backgroundColor: '#1a1a2e', borderWidth: 1, borderColor: '#333',
+    flex: 1, paddingVertical: 14, borderRadius: 16, alignItems: 'center',
+    backgroundColor: Colors.surfaceContainer, borderWidth: 1, borderColor: Colors.outlineVariant + '1A',
   },
-  toggleActive: { backgroundColor: '#1B5E20', borderColor: '#4CAF50' },
-  toggleActivePersonal: { backgroundColor: '#E65100', borderColor: '#FF9800' },
-  toggleText: { color: '#888', fontWeight: '600', fontSize: 16 },
+  toggleActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  toggleActivePersonal: {
+    backgroundColor: Colors.tertiary,
+    borderColor: Colors.tertiary,
+  },
+  toggleText: { color: Colors.onSurfaceVariant, fontWeight: '700', fontSize: 16 },
   toggleTextActive: { color: '#fff' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   categoryChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#1a1a2e', borderWidth: 1, borderColor: '#333',
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
+    backgroundColor: Colors.surfaceContainerHighest,
   },
-  categoryChipActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-  categoryChipText: { color: '#888', fontSize: 13 },
-  categoryChipTextActive: { color: '#fff' },
+  categoryChipActive: { backgroundColor: Colors.primaryContainer },
+  categoryChipText: { color: Colors.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
+  categoryChipTextActive: { color: Colors.onPrimaryContainer, fontWeight: '700' },
   saveBtn: {
-    backgroundColor: '#4CAF50', borderRadius: 12, paddingVertical: 16,
-    alignItems: 'center', marginTop: 24,
+    backgroundColor: Colors.primary, borderRadius: 16, paddingVertical: 18,
+    alignItems: 'center', marginTop: 28,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  saveBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  saveBtnText: { color: Colors.onPrimary, fontSize: 18, fontWeight: '700' },
 });
