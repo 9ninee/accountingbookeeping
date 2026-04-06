@@ -174,6 +174,9 @@ export function bankToTransactions(
       notes: null,
       isDuplicate: false,
       duplicateOfId: null,
+      dedupHash: null,
+      validationStatus: 'unverified' as const,
+      matchedSourceIds: null,
       createdAt: now,
       updatedAt: now,
     }));
@@ -192,6 +195,7 @@ export async function syncBankTransactions(
   inserted: number;
   duplicates: number;
   errors: string[];
+  reviewResult?: import('../models/types').ImportReviewResult;
 }> {
   const bankTxns = await fetchBankTransactions(config, startDate, endDate);
 

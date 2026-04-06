@@ -194,7 +194,7 @@ export function getTrackingStatus(): {
 
 // ── Background task handler ──
 
-TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }) => {
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
     console.error('Background location error:', error);
     return;
