@@ -14,12 +14,14 @@ import ImportReviewScreen from '../screens/ImportReviewScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import TripDetailScreen from '../screens/TripDetailScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 export type RootTabParamList = {
   DashboardTab: undefined;
   MileageTab: undefined;
   TransactionsTab: undefined;
   ImportTab: undefined;
+  SettingsTab: undefined;
 };
 
 export type TransactionsStackParamList = {
@@ -193,6 +195,11 @@ export default function AppNavigator() {
           name="ImportTab"
           component={ImportNavigator}
           options={{ title: 'Import', headerShown: false }}
+        />
+        <Tab.Screen
+          name="SettingsTab"
+          component={SettingsScreen}
+          options={{ title: 'Settings', headerTitle: 'Settings & Sync' }}
         />
       </Tab.Navigator>
     </NavigationContainer>

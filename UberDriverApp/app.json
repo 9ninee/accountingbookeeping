@@ -67,7 +67,9 @@
       ],
       "expo-document-picker",
       "expo-file-system",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-crypto"
     ]
   }
 }
