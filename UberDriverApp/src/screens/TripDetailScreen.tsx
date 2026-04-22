@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   purposeChipTextActive: { color: Colors.onPrimaryContainer },
   notesInput: {
     backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 16,
-    color: Colors.onSurface, fontSize: 14, minHeight: 100,
+    color: Colors.onSurface, fontSize: 14, fontFamily: Fonts.regular, minHeight: 100,
   },
 
   // Waypoints

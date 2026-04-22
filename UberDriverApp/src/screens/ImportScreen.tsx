@@ -9,6 +9,7 @@ import { importFromWallet } from '../services/walletImporter';
 import { initiateBankLink, getSavedBankConfigs, syncBankTransactions } from '../services/bankSyncService';
 import { ImportStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type ImportNav = NativeStackNavigationProp<ImportStackParamList, 'ImportHome'>;
 type ImportMethod = 'csv' | 'wallet' | 'bank' | null;
