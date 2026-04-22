@@ -24,6 +24,7 @@ transformers>=4.36.0
 langchain==0.2.1
 
 # 視覺化
+plotly>=5.18.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
