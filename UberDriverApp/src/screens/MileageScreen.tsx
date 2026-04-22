@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   tripRight: { alignItems: 'flex-end' },
   tripMiles: { fontSize: 20, fontFamily: Fonts.monoBold, color: Colors.secondary },
   tripSource: {
-    fontSize: 10, color: Colors.onSurfaceVariant, textTransform: 'uppercase',
+    fontSize: 10, fontFamily: Fonts.medium, color: Colors.onSurfaceVariant, textTransform: 'uppercase',
     letterSpacing: 1, marginTop: 4,
   },
 
@@ -359,12 +359,12 @@ const styles = StyleSheet.create({
   footerLoader: { padding: 32, alignItems: 'center', gap: 8 },
   spinnerWrap: { marginBottom: 4 },
   footerText: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant + '66',
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant + '66',
     letterSpacing: 2,
   },
 
   emptyText: {
     color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 48,
-    fontSize: 15, paddingHorizontal: 40,
+    fontSize: 15, paddingHorizontal: 40, fontFamily: Fonts.regular,
   },
 });
