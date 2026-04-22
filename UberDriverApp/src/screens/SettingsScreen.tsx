@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
-  Platform,
 } from 'react-native';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 import { getCurrentUser, signOut, isSupabaseConfigured } from '../services/authService';
 import { syncAll, isSyncing } from '../services/syncService';
 import { getDatabaseSize, getRoutePointsTotalCount } from '../services/database';
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.onSurfaceVariant + '88',
     letterSpacing: 1.5,
     marginTop: 20,
@@ -220,25 +220,27 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 14,
     color: Colors.onSurfaceVariant,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   rowValue: {
     fontSize: 14,
     color: Colors.onSurface,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   mono: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Fonts.mono,
     fontSize: 12,
   },
   desc: {
     fontSize: 13,
+    fontFamily: Fonts.regular,
     color: Colors.onSurfaceVariant,
     lineHeight: 20,
     marginBottom: 14,
   },
   step: {
     fontSize: 13,
+    fontFamily: Fonts.regular,
     color: Colors.onSurfaceVariant,
     lineHeight: 22,
     paddingLeft: 4,
@@ -255,7 +257,7 @@ const styles = StyleSheet.create({
   syncButtonText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   dangerButton: {
     marginTop: 12,
@@ -268,7 +270,7 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     color: Colors.error,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
   },
   resultBox: {
     marginTop: 12,
@@ -278,6 +280,7 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 12,
+    fontFamily: Fonts.regular,
     color: Colors.onSurface,
     lineHeight: 18,
   },

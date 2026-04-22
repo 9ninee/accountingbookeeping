@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, StyleSheet } from 'react-native';
 import { ImportReviewResult } from '../models/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import MileageScreen from '../screens/MileageScreen';
@@ -68,7 +69,7 @@ function TransactionsNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.primary,
-        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        headerTitleStyle: { fontFamily: Fonts.bold, fontSize: 18 },
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
@@ -97,7 +98,7 @@ function MileageNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.primary,
-        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        headerTitleStyle: { fontFamily: Fonts.bold, fontSize: 18 },
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
@@ -121,7 +122,7 @@ function ImportNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.primary,
-        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        headerTitleStyle: { fontFamily: Fonts.bold, fontSize: 18 },
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
@@ -146,7 +147,7 @@ export default function AppNavigator() {
         screenOptions={({ route }) => ({
           headerStyle: { backgroundColor: Colors.background },
           headerTintColor: Colors.primary,
-          headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+          headerTitleStyle: { fontFamily: Fonts.bold, fontSize: 20 },
           tabBarStyle: {
             backgroundColor: Colors.surfaceContainerLow + 'D9', // 85% opacity
             borderTopWidth: 0,
@@ -166,7 +167,7 @@ export default function AppNavigator() {
           tabBarInactiveTintColor: Colors.onSurfaceVariant + '99',
           tabBarLabelStyle: {
             fontSize: 10,
-            fontWeight: '600',
+            fontFamily: Fonts.semiBold,
             textTransform: 'uppercase',
             letterSpacing: 1,
             marginTop: 2,
@@ -221,11 +222,11 @@ const styles = StyleSheet.create({
   },
   tabIconText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     color: Colors.onSurfaceVariant + '99',
   },
   tabIconTextActive: {
     color: Colors.primary,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
 });

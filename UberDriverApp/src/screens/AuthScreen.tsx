@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 import { signInWithEmail, signUpWithEmail, resetPassword } from '../services/authService';
 
 type Mode = 'signin' | 'signup' | 'reset';
@@ -192,12 +193,13 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: Fonts.extraBold,
     color: Colors.primary,
     letterSpacing: -0.5,
   },
   tagline: {
     fontSize: 14,
+    fontFamily: Fonts.regular,
     color: Colors.onSurfaceVariant,
     marginTop: 4,
   },
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.onSurface,
     marginBottom: 20,
   },
@@ -219,7 +221,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     color: Colors.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -247,6 +249,7 @@ const styles = StyleSheet.create({
   },
   msgText: {
     fontSize: 13,
+    fontFamily: Fonts.regular,
     textAlign: 'center',
   },
   msgTextError: {
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   links: {
     marginTop: 16,
@@ -278,10 +281,11 @@ const styles = StyleSheet.create({
   linkText: {
     color: Colors.onSurfaceVariant,
     fontSize: 14,
+    fontFamily: Fonts.regular,
   },
   linkBold: {
     color: Colors.primary,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   skipButton: {
     marginTop: 20,
@@ -290,5 +294,6 @@ const styles = StyleSheet.create({
   skipText: {
     color: Colors.onSurfaceVariant + '88',
     fontSize: 13,
+    fontFamily: Fonts.regular,
   },
 });

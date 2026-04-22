@@ -8,6 +8,7 @@ import { insertTransactionBatch } from '../services/database';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { ImportStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type ReviewRoute = RouteProp<ImportStackParamList, 'ImportReview'>;
 
@@ -230,8 +231,8 @@ export default function ImportReviewScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16, paddingTop: 8 },
-  header: { fontSize: 32, fontWeight: '800', color: Colors.onSurface, marginBottom: 4 },
-  subtitle: { color: Colors.onSurfaceVariant, fontSize: 16, marginBottom: 24 },
+  header: { fontSize: 32, fontFamily: Fonts.extraBold, color: Colors.onSurface, marginBottom: 4 },
+  subtitle: { color: Colors.onSurfaceVariant, fontSize: 16, fontFamily: Fonts.regular, marginBottom: 24 },
 
   // Summary Cards
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
@@ -242,17 +243,17 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   summaryCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  summaryIcon: { fontSize: 20, fontWeight: '700' },
+  summaryIcon: { fontSize: 20, fontFamily: Fonts.bold },
   summaryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
-  summaryBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  summaryCount: { fontSize: 28, fontWeight: '700', color: Colors.onSurface },
-  summaryLabel: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 4 },
+  summaryBadgeText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  summaryCount: { fontSize: 28, fontFamily: Fonts.monoBold, color: Colors.onSurface },
+  summaryLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 4 },
 
   // Section
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: Colors.onSurface },
+  sectionTitle: { fontSize: 20, fontFamily: Fonts.bold, color: Colors.onSurface },
   actionBadge: { backgroundColor: Colors.error, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  actionBadgeText: { color: Colors.onError, fontSize: 10, fontWeight: '700' },
+  actionBadgeText: { color: Colors.onError, fontSize: 10, fontFamily: Fonts.bold },
 
   // Items
   itemList: { flex: 1, marginBottom: 12 },
@@ -266,19 +267,19 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 12,
     justifyContent: 'center', alignItems: 'center',
   },
-  itemIconText: { fontSize: 18, fontWeight: '700' },
-  itemDesc: { color: Colors.onSurface, fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  itemMeta: { color: Colors.onSurfaceVariant, fontSize: 12 },
+  itemIconText: { fontSize: 18, fontFamily: Fonts.bold },
+  itemDesc: { color: Colors.onSurface, fontSize: 15, fontFamily: Fonts.semiBold, marginBottom: 4 },
+  itemMeta: { color: Colors.onSurfaceVariant, fontSize: 12, fontFamily: Fonts.regular },
   itemAmountWrap: { alignItems: 'flex-end' },
-  itemAmount: { fontSize: 18, fontWeight: '700' },
+  itemAmount: { fontSize: 18, fontFamily: Fonts.monoBold },
   conflictLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.error,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.error,
     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4,
   },
 
   // Duplicate
   dupInfo: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.outlineVariant + '1A' },
-  dupReason: { color: Colors.tertiary, fontSize: 12, fontStyle: 'italic' },
+  dupReason: { color: Colors.tertiary, fontSize: 12, fontFamily: Fonts.regular, fontStyle: 'italic' },
 
   // Conflict
   conflictActions: { marginTop: 12 },
@@ -290,10 +291,10 @@ const styles = StyleSheet.create({
   rejectBtnActive: { backgroundColor: Colors.errorContainer },
   acceptBtn: { backgroundColor: Colors.primary },
   acceptBtnActive: { backgroundColor: Colors.primary },
-  conflictBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  conflictBtnText: { color: '#fff', fontSize: 14, fontFamily: Fonts.semiBold },
 
   // Empty
-  emptyText: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 30 },
+  emptyText: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 30, fontFamily: Fonts.regular },
 
   // Action Bar
   actionBar: {
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     paddingVertical: 14, paddingHorizontal: 24, borderRadius: 16, alignItems: 'center',
   },
-  cancelBtnText: { color: Colors.onSurfaceVariant, fontSize: 16, fontWeight: '600' },
+  cancelBtnText: { color: Colors.onSurfaceVariant, fontSize: 16, fontFamily: Fonts.semiBold },
   confirmBtn: {
     flex: 1, paddingVertical: 14, borderRadius: 16, alignItems: 'center',
     backgroundColor: Colors.primary,
@@ -312,10 +313,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   confirmBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  confirmBtnText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '700' },
+  confirmBtnText: { color: Colors.onPrimary, fontSize: 16, fontFamily: Fonts.bold },
   confirmCount: {
     backgroundColor: Colors.onPrimary + '33', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4,
   },
-  confirmCountText: { color: Colors.onPrimary, fontSize: 12, fontWeight: '700' },
+  confirmCountText: { color: Colors.onPrimary, fontSize: 12, fontFamily: Fonts.monoBold },
   disabledBtn: { opacity: 0.5 },
 });

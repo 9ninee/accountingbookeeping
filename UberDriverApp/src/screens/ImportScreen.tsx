@@ -288,11 +288,11 @@ const styles = StyleSheet.create({
     marginTop: 16, marginBottom: 12,
   },
   headerBadgeText: {
-    fontSize: 10, fontWeight: '700', color: Colors.primary,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.primary,
     letterSpacing: 2, textTransform: 'uppercase',
   },
-  header: { fontSize: 28, fontWeight: '700', color: Colors.onSurface, marginBottom: 8 },
-  subtitle: { color: Colors.onSurfaceVariant, fontSize: 14, marginBottom: 24, lineHeight: 20 },
+  header: { fontSize: 28, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 8 },
+  subtitle: { color: Colors.onSurfaceVariant, fontSize: 14, fontFamily: Fonts.regular, marginBottom: 24, lineHeight: 20 },
 
   // Toggle
   toggleWrap: { alignItems: 'center', marginBottom: 24 },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.tertiary,
   },
   toggleText: {
-    color: Colors.onSurfaceVariant, fontWeight: '700', fontSize: 12, letterSpacing: 1,
+    color: Colors.onSurfaceVariant, fontFamily: Fonts.bold, fontSize: 12, letterSpacing: 1,
   },
   toggleTextActive: { color: '#fff' },
 
@@ -341,10 +341,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1,
   },
-  methodIconText: { fontSize: 14, fontWeight: '700' },
-  methodTitle: { fontSize: 16, fontWeight: '700', color: Colors.onSurface },
+  methodIconText: { fontSize: 14, fontFamily: Fonts.bold },
+  methodTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Colors.onSurface },
   methodDesc: {
-    fontSize: 10, fontWeight: '600', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant,
     letterSpacing: 1.5, marginTop: 2,
   },
   methodBtn: {
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBright + '1A',
     borderWidth: 1,
   },
-  methodBtnText: { fontSize: 12, fontWeight: '700' },
+  methodBtnText: { fontSize: 12, fontFamily: Fonts.bold },
   methodDivider: {
     height: 1, backgroundColor: Colors.outlineVariant + '1A', marginHorizontal: 20,
   },
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   importBtn: {
     backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
   },
-  importBtnText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '600' },
+  importBtnText: { color: Colors.onPrimary, fontSize: 16, fontFamily: Fonts.semiBold },
 
   // Result Card
   resultCard: {
@@ -380,22 +380,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 24,
   },
-  resultTitle: { fontSize: 20, fontWeight: '700', color: Colors.onSurface, marginBottom: 4 },
-  resultSubtitle: { fontSize: 12, color: Colors.onSurfaceVariant },
+  resultTitle: { fontSize: 20, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 4 },
+  resultSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant },
   resultIconWrap: {
     backgroundColor: Colors.primary + '1A', padding: 8, borderRadius: 12,
   },
-  resultIcon: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  resultIcon: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.primary },
   resultGrid: { flexDirection: 'row', gap: 12 },
   resultStat: {
     flex: 1, backgroundColor: Colors.surfaceContainerLowest,
     borderRadius: 20, padding: 16, borderLeftWidth: 4,
   },
   resultStatLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     letterSpacing: 1, marginBottom: 8,
   },
   resultStatRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  resultStatValue: { fontSize: 28, fontWeight: '700' },
-  resultStatUnit: { fontSize: 10, color: Colors.onSurfaceVariant },
+  resultStatValue: { fontSize: 28, fontFamily: Fonts.monoBold },
+  resultStatUnit: { fontSize: 10, fontFamily: Fonts.medium, color: Colors.onSurfaceVariant },
 });
