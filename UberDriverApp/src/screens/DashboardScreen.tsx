@@ -8,6 +8,7 @@ import { getTrackingStatus } from '../services/mileageTracker';
 import { getStorageStats, forceCleanup, StorageStats } from '../services/storageManager';
 import { formatCurrency, formatMiles, getCurrentMonthRange, calculateMileageDeduction } from '../utils/helpers';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 const CATEGORY_ICONS: Record<string, string> = {
   fuel: 'F',
@@ -261,11 +262,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.onPrimary,
   },
   trackingLabel: {
-    color: Colors.onPrimary, fontWeight: '700', fontSize: 13,
+    color: Colors.onPrimary, fontFamily: Fonts.bold, fontSize: 13,
     letterSpacing: 1, textTransform: 'uppercase',
   },
   trackingDistance: {
-    color: Colors.onPrimary, fontWeight: '800', fontSize: 14,
+    color: Colors.onPrimary, fontFamily: Fonts.monoBold, fontSize: 14,
   },
 
   // Section Headers
@@ -277,15 +278,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20, fontWeight: '700', color: Colors.onSurface,
+    fontSize: 20, fontFamily: Fonts.bold, color: Colors.onSurface,
     marginTop: 16, marginBottom: 12,
   },
   sectionSubtitle: {
-    fontSize: 11, fontWeight: '600', color: Colors.onSurfaceVariant,
+    fontSize: 11, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant,
     letterSpacing: 2, textTransform: 'uppercase',
   },
   viewAll: {
-    fontSize: 12, fontWeight: '700', color: Colors.secondary,
+    fontSize: 12, fontFamily: Fonts.bold, color: Colors.secondary,
   },
 
   // Bento Grid
@@ -320,10 +321,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '33',
   },
   bentoLabel: {
-    fontSize: 13, fontWeight: '600', color: Colors.onSurfaceVariant, marginBottom: 8,
+    fontSize: 13, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant, marginBottom: 8,
   },
   bentoValue: {
-    fontSize: 24, fontWeight: '700',
+    fontSize: 24, fontFamily: Fonts.monoBold,
   },
   bentoTrend: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12,
@@ -349,11 +350,11 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: Colors.surfaceContainerLow, borderRadius: 16, padding: 16,
   },
   mileageCardLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   mileageCardValue: {
-    fontSize: 22, fontWeight: '700', color: Colors.onSurface, marginTop: 6,
+    fontSize: 22, fontFamily: Fonts.monoBold, color: Colors.onSurface, marginTop: 6,
   },
 
   // IRS Card
@@ -374,10 +375,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary + '1A',
     justifyContent: 'center', alignItems: 'center',
   },
-  irsIcon: { fontSize: 20, fontWeight: '700', color: Colors.secondary },
-  irsTitle: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  irsSubtitle: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
-  irsValue: { fontSize: 18, fontWeight: '700', color: Colors.secondary },
+  irsIcon: { fontSize: 20, fontFamily: Fonts.monoBold, color: Colors.secondary },
+  irsTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.onSurface },
+  irsSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 2 },
+  irsValue: { fontSize: 18, fontFamily: Fonts.monoBold, color: Colors.secondary },
 
   // Categories
   categoryRow: {
@@ -397,10 +398,10 @@ const styles = StyleSheet.create({
   },
   categoryIcon: { fontSize: 14, fontWeight: '600', color: Colors.primary },
   categoryName: {
-    fontSize: 14, fontWeight: '600', color: Colors.onSurface,
+    fontSize: 14, fontFamily: Fonts.semiBold, color: Colors.onSurface,
     textTransform: 'capitalize',
   },
-  categoryAmount: { fontSize: 14, fontWeight: '700', color: Colors.error },
+  categoryAmount: { fontSize: 14, fontFamily: Fonts.monoBold, color: Colors.error },
 
   // System Health
   systemCard: {
@@ -410,17 +411,17 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   systemTitle: {
-    fontSize: 18, fontWeight: '700', color: Colors.onSurface, marginBottom: 16,
+    fontSize: 18, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 16,
   },
   systemStatsRow: {
     flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20,
   },
   systemStatLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   systemStatValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 4 },
-  systemStatValue: { fontSize: 28, fontWeight: '800', color: Colors.onSurface },
+  systemStatValue: { fontSize: 28, fontFamily: Fonts.monoBold, color: Colors.onSurface },
   systemStatUnit: { fontSize: 12, color: Colors.onSurfaceVariant },
   cleanupBtn: {
     backgroundColor: Colors.tertiary,
@@ -437,6 +438,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   cleanupBtnText: {
-    color: Colors.onTertiary, fontSize: 14, fontWeight: '700', letterSpacing: 1,
+    color: Colors.onTertiary, fontSize: 14, fontFamily: Fonts.bold, letterSpacing: 1,
   },
 });

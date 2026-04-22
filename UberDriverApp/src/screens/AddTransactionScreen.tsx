@@ -7,6 +7,7 @@ import { Transaction, TransactionType, TransactionCategory } from '../models/typ
 import { insertTransaction } from '../services/database';
 import { generateId } from '../utils/helpers';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 const CATEGORIES: { label: string; value: TransactionCategory }[] = [
   { label: 'Fuel', value: 'fuel' },
@@ -156,7 +157,7 @@ export default function AddTransactionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
   label: {
-    color: Colors.onSurfaceVariant, fontSize: 11, fontWeight: '700',
+    color: Colors.onSurfaceVariant, fontSize: 11, fontFamily: Fonts.bold,
     marginTop: 20, marginBottom: 10, letterSpacing: 1.5,
   },
   input: {
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.tertiary,
     borderColor: Colors.tertiary,
   },
-  toggleText: { color: Colors.onSurfaceVariant, fontWeight: '700', fontSize: 16 },
+  toggleText: { color: Colors.onSurfaceVariant, fontFamily: Fonts.bold, fontSize: 16 },
   toggleTextActive: { color: '#fff' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   categoryChip: {
@@ -190,8 +191,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerHighest,
   },
   categoryChipActive: { backgroundColor: Colors.primaryContainer },
-  categoryChipText: { color: Colors.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
-  categoryChipTextActive: { color: Colors.onPrimaryContainer, fontWeight: '700' },
+  categoryChipText: { color: Colors.onSurfaceVariant, fontSize: 13, fontFamily: Fonts.semiBold },
+  categoryChipTextActive: { color: Colors.onPrimaryContainer, fontFamily: Fonts.bold },
   saveBtn: {
     backgroundColor: Colors.primary, borderRadius: 16, paddingVertical: 18,
     alignItems: 'center', marginTop: 28,
@@ -201,5 +202,5 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
-  saveBtnText: { color: Colors.onPrimary, fontSize: 18, fontWeight: '700' },
+  saveBtnText: { color: Colors.onPrimary, fontSize: 18, fontFamily: Fonts.bold },
 });

@@ -6,6 +6,7 @@ import { getTransactions, updateTransaction, deleteTransaction } from '../servic
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { TransactionsStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type DetailRoute = RouteProp<TransactionsStackParamList, 'TransactionDetail'>;
 
@@ -166,29 +167,29 @@ const detailStyles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.outlineVariant + '1A',
   },
-  label: { fontSize: 14, color: Colors.onSurfaceVariant, fontWeight: '500' },
+  label: { fontSize: 14, color: Colors.onSurfaceVariant, fontFamily: Fonts.medium },
   value: {
-    fontSize: 14, color: Colors.onSurface, fontWeight: '600', textTransform: 'capitalize',
+    fontSize: 14, color: Colors.onSurface, fontFamily: Fonts.semiBold, textTransform: 'capitalize',
     maxWidth: 200, textAlign: 'right',
   },
 });
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
-  loading: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 40 },
+  loading: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 40, fontFamily: Fonts.regular },
 
   // Header
   headerCard: {
     backgroundColor: Colors.surfaceContainer, borderRadius: 20, padding: 24, marginTop: 8,
   },
-  description: { fontSize: 22, fontWeight: '700', color: Colors.onSurface, marginBottom: 8 },
-  amount: { fontSize: 36, fontWeight: '800', marginBottom: 16 },
+  description: { fontSize: 22, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 8 },
+  amount: { fontSize: 36, fontFamily: Fonts.monoBold, marginBottom: 16 },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   typeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
-  typeBadgeText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBadgeText: { fontSize: 12, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  statusText: { fontSize: 12, fontFamily: Fonts.bold, textTransform: 'uppercase' },
 
   // Details
   detailsCard: {
@@ -202,12 +203,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.tertiary + '33',
   },
   duplicateIcon: {
-    fontSize: 24, fontWeight: '700', color: Colors.tertiary,
+    fontSize: 24, fontFamily: Fonts.bold, color: Colors.tertiary,
     width: 40, height: 40, textAlign: 'center', lineHeight: 40,
     borderRadius: 20, backgroundColor: Colors.tertiary + '33',
   },
-  duplicateTitle: { fontSize: 14, fontWeight: '700', color: Colors.tertiary, marginBottom: 2 },
-  duplicateText: { fontSize: 12, color: Colors.onSurfaceVariant },
+  duplicateTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.tertiary, marginBottom: 2 },
+  duplicateText: { fontSize: 12, color: Colors.onSurfaceVariant, fontFamily: Fonts.regular },
 
   // Delete
   deleteBtn: {
@@ -217,9 +218,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.errorContainer + '33',
     borderWidth: 1, borderColor: Colors.error + '4D',
   },
-  deleteBtnText: { color: Colors.error, fontSize: 16, fontWeight: '700' },
+  deleteBtnText: { color: Colors.error, fontSize: 16, fontFamily: Fonts.bold },
   deleteWarning: {
     textAlign: 'center', color: Colors.onSurfaceVariant, fontSize: 10,
-    marginTop: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.6,
+    marginTop: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.6, fontFamily: Fonts.regular,
   },
 });

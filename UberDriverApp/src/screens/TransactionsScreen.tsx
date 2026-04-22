@@ -9,6 +9,7 @@ import { getTransactionsPaginated } from '../services/database';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { TransactionsStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type TxnNav = NativeStackNavigationProp<TransactionsStackParamList, 'TransactionsList'>;
 
@@ -221,8 +222,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  filterText: { color: Colors.onSurfaceVariant, fontWeight: '600', fontSize: 14 },
-  filterTextActive: { color: Colors.onPrimary, fontWeight: '700' },
+  filterText: { color: Colors.onSurfaceVariant, fontFamily: Fonts.semiBold, fontSize: 14 },
+  filterTextActive: { color: Colors.onPrimary, fontFamily: Fonts.bold },
 
   // Header Stats
   headerStats: {
@@ -231,10 +232,10 @@ const styles = StyleSheet.create({
   },
   headerStatsLeft: {},
   volumeLabel: {
-    fontSize: 12, fontWeight: '600', color: Colors.onSurfaceVariant,
+    fontSize: 12, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant,
     letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4,
   },
-  volumeValue: { fontSize: 32, fontWeight: '700', color: Colors.primary },
+  volumeValue: { fontSize: 32, fontFamily: Fonts.monoBold, color: Colors.primary },
   syncBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
   },
   syncDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary },
   syncText: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 0.5,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant, letterSpacing: 0.5,
   },
 
   // Transaction Card
@@ -255,16 +256,16 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
   },
   txnTopRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  txnDesc: { color: Colors.onSurface, fontSize: 17, fontWeight: '700', marginBottom: 6 },
+  txnDesc: { color: Colors.onSurface, fontSize: 17, fontFamily: Fonts.bold, marginBottom: 6 },
   txnMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  typeBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  txnDate: { color: Colors.onSurfaceVariant, fontSize: 12, fontWeight: '500' },
+  typeBadgeText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 1 },
+  txnDate: { color: Colors.onSurfaceVariant, fontSize: 12, fontFamily: Fonts.medium },
   txnAmountWrap: { alignItems: 'flex-end' },
-  txnAmount: { fontSize: 20, fontWeight: '700' },
+  txnAmount: { fontSize: 20, fontFamily: Fonts.monoBold },
   validationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  statusText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
 
   txnFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -273,18 +274,18 @@ const styles = StyleSheet.create({
   txnSourceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   txnSourceIcon: { fontSize: 12, color: Colors.onSurfaceVariant },
   txnSource: {
-    fontSize: 11, fontWeight: '500', color: Colors.onSurfaceVariant, fontStyle: 'italic',
+    fontSize: 11, fontFamily: Fonts.medium, color: Colors.onSurfaceVariant, fontStyle: 'italic',
   },
-  txnRef: { fontSize: 11, fontWeight: '700', color: Colors.onSurfaceVariant + '99' },
+  txnRef: { fontSize: 11, fontFamily: Fonts.mono, color: Colors.onSurfaceVariant + '99' },
 
   // Empty & Footer
   emptyText: {
     color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 60,
-    fontSize: 15, paddingHorizontal: 40,
+    fontSize: 15, paddingHorizontal: 40, fontFamily: Fonts.regular,
   },
   footerLoader: { padding: 32, alignItems: 'center', gap: 8 },
   footerText: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant + '66',
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant + '66',
     letterSpacing: 2,
   },
 
@@ -300,5 +301,5 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
-  fabText: { color: Colors.onPrimary, fontSize: 28, fontWeight: '700', marginTop: -2 },
+  fabText: { color: Colors.onPrimary, fontSize: 28, fontFamily: Fonts.bold, marginTop: -2 },
 });
