@@ -359,9 +359,9 @@ const styles = StyleSheet.create({
   propertiesCard: {
     backgroundColor: Colors.surfaceContainer, borderRadius: 16, padding: 24, marginTop: 16,
   },
-  propertiesTitle: { fontSize: 18, fontWeight: '700', color: Colors.onSurface, marginBottom: 20 },
+  propertiesTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 20 },
   propertiesLabel: {
-    fontSize: 11, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 11, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8,
   },
   purposeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerHighest,
   },
   purposeChipActive: { backgroundColor: Colors.primaryContainer },
-  purposeChipText: { fontSize: 12, fontWeight: '700', color: Colors.onSurfaceVariant },
+  purposeChipText: { fontSize: 12, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant },
   purposeChipTextActive: { color: Colors.onPrimaryContainer },
   notesInput: {
     backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 16,
@@ -380,8 +380,8 @@ const styles = StyleSheet.create({
   // Waypoints
   waypointsSection: { marginTop: 20 },
   waypointsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  waypointsTitle: { fontSize: 18, fontWeight: '700', color: Colors.onSurface },
-  waypointsCount: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+  waypointsTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Colors.onSurface },
+  waypointsCount: { fontSize: 12, fontFamily: Fonts.bold, color: Colors.primary },
   waypointsTable: {
     backgroundColor: Colors.surfaceContainerLow, borderRadius: 16, overflow: 'hidden',
   },
