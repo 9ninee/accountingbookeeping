@@ -10,6 +10,8 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@react-navigation/bottom-tabs": "^6.5.0",
     "@react-navigation/native": "^6.1.0",
     "@react-navigation/native-stack": "^6.9.0",
@@ -20,8 +22,10 @@
     "expo-crypto": "^55.0.12",
     "expo-document-picker": "~12.0.0",
     "expo-file-system": "~17.0.0",
+    "expo-font": "^55.0.6",
     "expo-location": "~17.0.0",
     "expo-secure-store": "^55.0.11",
+    "expo-splash-screen": "^55.0.19",
     "expo-sqlite": "~14.0.0",
     "expo-task-manager": "~12.0.0",
     "expo-updates": "~0.26.0",
