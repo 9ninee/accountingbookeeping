@@ -8,6 +8,7 @@ import { getMileageTrips, getRoutePointsForTrip, updateMileageTrip, deleteRouteP
 import { formatMiles, formatDateTime, calculateMileageDeduction } from '../utils/helpers';
 import { MileageStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type TripRoute = RouteProp<MileageStackParamList, 'TripDetail'>;
 
@@ -274,7 +275,7 @@ export default function TripDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
-  loading: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 40 },
+  loading: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 40, fontFamily: Fonts.regular },
 
   // Hero
   heroSection: { flexDirection: 'row', gap: 12, marginTop: 12 },
@@ -291,11 +292,11 @@ const styles = StyleSheet.create({
   completedBadge: {
     backgroundColor: Colors.primaryContainer, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
   },
-  completedBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.onPrimaryContainer, textTransform: 'uppercase', letterSpacing: 0.5 },
+  completedBadgeText: { fontSize: 10, fontFamily: Fonts.bold, color: Colors.onPrimaryContainer, textTransform: 'uppercase', letterSpacing: 0.5 },
   tripTypeBadge: {
     backgroundColor: Colors.surfaceContainerHigh + 'CC', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
   },
-  tripTypeBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tripTypeBadgeText: { fontSize: 10, fontFamily: Fonts.bold, color: Colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   distanceCard: {
     flex: 1, backgroundColor: Colors.surfaceContainer, borderRadius: 16, padding: 20,
@@ -305,15 +306,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   distanceLabel: {
-    fontSize: 10, fontWeight: '600', color: Colors.onSurfaceVariant, letterSpacing: 2,
+    fontSize: 10, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant, letterSpacing: 2,
   },
   distanceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 8 },
-  distanceValue: { fontSize: 40, fontWeight: '700', color: Colors.secondary },
-  distanceUnit: { fontSize: 18, fontWeight: '700', color: Colors.secondary },
+  distanceValue: { fontSize: 40, fontFamily: Fonts.monoBold, color: Colors.secondary },
+  distanceUnit: { fontSize: 18, fontFamily: Fonts.bold, color: Colors.secondary },
   distanceStats: { marginTop: 20, gap: 12 },
   distanceStat: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  distanceStatLabel: { fontSize: 12, color: Colors.onSurfaceVariant, fontWeight: '500' },
-  distanceStatValue: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
+  distanceStatLabel: { fontSize: 12, color: Colors.onSurfaceVariant, fontFamily: Fonts.medium },
+  distanceStatValue: { fontSize: 14, fontFamily: Fonts.monoMedium, color: Colors.onSurface },
   distanceStatUnit: { fontSize: 10, opacity: 0.6 },
 
   // Location
@@ -328,10 +329,10 @@ const styles = StyleSheet.create({
   locationDetails: { flex: 1, gap: 20 },
   locationPoint: {},
   locationPointLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant, letterSpacing: 1.5,
   },
-  locationPointTime: { fontSize: 16, fontWeight: '700', color: Colors.onSurface, marginTop: 4 },
-  locationPointCoords: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
+  locationPointTime: { fontSize: 16, fontFamily: Fonts.bold, color: Colors.onSurface, marginTop: 4 },
+  locationPointCoords: { fontSize: 12, fontFamily: Fonts.mono, color: Colors.onSurfaceVariant, marginTop: 2 },
 
   // Storage
   storageCard: {
