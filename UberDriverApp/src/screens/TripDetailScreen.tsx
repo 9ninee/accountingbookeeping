@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerLow, borderRadius: 16, padding: 20, marginTop: 12,
   },
   storageTierLabel: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     letterSpacing: 1.5, marginBottom: 12,
   },
   storageTierRow: { flexDirection: 'row', gap: 8 },
@@ -348,10 +348,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainer, borderWidth: 1, borderColor: 'transparent',
   },
   storageTierBoxActive: { backgroundColor: Colors.errorContainer + '33' },
-  storageTierIcon: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
-  storageTierName: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  storageTierIcon: { fontSize: 20, fontFamily: Fonts.bold, marginBottom: 4 },
+  storageTierName: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
   storageNote: {
-    fontSize: 10, color: Colors.onSurfaceVariant, fontStyle: 'italic',
+    fontSize: 10, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, fontStyle: 'italic',
     textAlign: 'center', marginTop: 14,
   },
 
