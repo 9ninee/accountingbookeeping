@@ -391,18 +391,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerLowest + '80',
   },
   waypointColHeader: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.bold, color: Colors.onSurfaceVariant,
     textTransform: 'uppercase', letterSpacing: 1,
   },
   waypointRow: {
     flexDirection: 'row', padding: 14, alignItems: 'center',
     borderBottomWidth: 1, borderBottomColor: Colors.outlineVariant + '0D',
   },
-  waypointCell: { fontSize: 12, color: Colors.onSurface },
-  monoText: { fontFamily: 'monospace' },
-  waypointSpeed: { fontWeight: '700', color: Colors.secondary },
+  waypointCell: { fontSize: 12, color: Colors.onSurface, fontFamily: Fonts.regular },
+  monoText: { fontFamily: Fonts.mono },
+  waypointSpeed: { fontFamily: Fonts.monoBold, color: Colors.secondary },
   morePoints: {
-    textAlign: 'center', padding: 12, fontSize: 12, color: Colors.onSurfaceVariant,
+    textAlign: 'center', padding: 12, fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant,
   },
 
   // Delete
@@ -413,9 +413,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.errorContainer + '33',
     borderWidth: 1, borderColor: Colors.error + '4D',
   },
-  deleteBtnText: { color: Colors.error, fontSize: 16, fontWeight: '700' },
+  deleteBtnText: { color: Colors.error, fontSize: 16, fontFamily: Fonts.bold },
   deleteWarning: {
-    textAlign: 'center', color: Colors.onSurfaceVariant, fontSize: 10,
+    textAlign: 'center', color: Colors.onSurfaceVariant, fontSize: 10, fontFamily: Fonts.regular,
     marginTop: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.6,
   },
 });
