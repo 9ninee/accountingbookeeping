@@ -10,6 +10,7 @@ import { startTrip, stopTrip, getTrackingStatus } from '../services/mileageTrack
 import { formatMiles, formatDateTime } from '../utils/helpers';
 import { MileageStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type MileageNav = NativeStackNavigationProp<MileageStackParamList, 'MileageHome'>;
 
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   trackButtonInner: { alignItems: 'center' },
   trackButtonIcon: { color: '#fff', fontSize: 48, marginBottom: 4 },
   trackButtonText: {
-    color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 2,
+    color: '#fff', fontSize: 16, fontFamily: Fonts.extraBold, letterSpacing: 2,
   },
 
   // Live Card
@@ -297,32 +298,32 @@ const styles = StyleSheet.create({
     width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary,
   },
   liveStatusText: {
-    fontSize: 10, fontWeight: '600', color: Colors.onSurfaceVariant, letterSpacing: 0.5,
+    fontSize: 10, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant, letterSpacing: 0.5,
   },
   liveSubLabel: {
     fontSize: 11, color: Colors.onSurfaceVariant, letterSpacing: 1.5,
-    textTransform: 'uppercase', fontWeight: '600', marginBottom: 4,
+    textTransform: 'uppercase', fontFamily: Fonts.semiBold, marginBottom: 4,
   },
   liveDistanceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  liveDistance: { fontSize: 52, fontWeight: '700', color: '#fff' },
-  liveDistanceUnit: { fontSize: 20, fontWeight: '600', color: Colors.primaryFixedDim },
+  liveDistance: { fontSize: 52, fontFamily: Fonts.monoBold, color: '#fff' },
+  liveDistanceUnit: { fontSize: 20, fontFamily: Fonts.semiBold, color: Colors.primaryFixedDim },
   liveStatsRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
   liveStatBox: {
     flex: 1, backgroundColor: Colors.surfaceContainerLowest + '80', borderRadius: 12, padding: 12,
   },
   liveStatLabel: {
-    fontSize: 10, fontWeight: '600', color: Colors.onSurfaceVariant,
+    fontSize: 10, fontFamily: Fonts.semiBold, color: Colors.onSurfaceVariant,
     letterSpacing: 0.5, marginBottom: 6,
   },
-  liveStatValue: { fontSize: 14, fontWeight: '600', color: Colors.onSurfaceVariant },
+  liveStatValue: { fontSize: 14, fontFamily: Fonts.monoMedium, color: Colors.onSurfaceVariant },
 
   // History
   historyHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
     marginTop: 32, marginBottom: 16,
   },
-  historyTitle: { fontSize: 22, fontWeight: '700', color: Colors.onSurface },
-  historySubtitle: { fontSize: 13, color: Colors.onSurfaceVariant, marginTop: 2 },
+  historyTitle: { fontSize: 22, fontFamily: Fonts.bold, color: Colors.onSurface },
+  historySubtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 2 },
   filterIcon: { fontSize: 18, color: Colors.onSurfaceVariant },
 
   // Trip Card
@@ -339,16 +340,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerLow,
     justifyContent: 'center', alignItems: 'center',
   },
-  tripIcon: { fontSize: 18, fontWeight: '700' },
+  tripIcon: { fontSize: 18, fontFamily: Fonts.bold },
   tripTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tripDate: { fontSize: 15, fontWeight: '700', color: Colors.onSurface },
+  tripDate: { fontSize: 15, fontFamily: Fonts.bold, color: Colors.onSurface },
   purposeBadge: {
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20,
   },
-  purposeBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-  tripMeta: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 4 },
+  purposeBadgeText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
+  tripMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 4 },
   tripRight: { alignItems: 'flex-end' },
-  tripMiles: { fontSize: 20, fontWeight: '700', color: Colors.secondary },
+  tripMiles: { fontSize: 20, fontFamily: Fonts.monoBold, color: Colors.secondary },
   tripSource: {
     fontSize: 10, color: Colors.onSurfaceVariant, textTransform: 'uppercase',
     letterSpacing: 1, marginTop: 4,
