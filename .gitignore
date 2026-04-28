@@ -1,1 +1,29 @@
 node_modules/
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+UberDriverApp/.env
+UberDriverApp/.env.local
+UberDriverApp/.env.production
+
+# .env.safe is the template (no secrets) — it IS committed
+!.env.safe
+!UberDriverApp/.env.safe
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Credentials
+*.p12
+*.key
+*.pem
+google-service-account.json

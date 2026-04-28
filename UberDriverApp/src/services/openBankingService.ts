@@ -1,35 +1,11 @@
 import { generateId } from '../utils/helpers';
 import { getDatabase } from './database';
+import { GOCARDLESS_SECRET_ID, GOCARDLESS_SECRET_KEY } from '@env';
 
-/**
- * GoCardless Bank Account Data (formerly Nordigen) — Open Banking integration.
- *
- * FREE tier: 50 unique end-user agreements, real UK/EU bank connections.
- * Register at: https://bankaccountdata.gocardless.com
- *
- * Flow:
- *   1. App gets access token via secret_id/secret_key
- *   2. User selects their bank (institution)
- *   3. App creates a requisition → returns a link URL
- *   4. User opens link in browser, logs into bank, grants consent
- *   5. App polls requisition status until linked
- *   6. App fetches accounts → transactions
- *
- * PSD2 requirement: consent expires after 90 days, user must re-authenticate.
- */
-
-// ── Configuration ──
-// Replace with your GoCardless Bank Account Data credentials
-// Get them at: https://bankaccountdata.gocardless.com/user-secrets/
-const GOCARDLESS_SECRET_ID = 'YOUR_SECRET_ID';
-const GOCARDLESS_SECRET_KEY = 'YOUR_SECRET_KEY';
 const BASE_URL = 'https://bankaccountdata.gocardless.com/api/v2';
 
 export function isOpenBankingConfigured(): boolean {
-  return (
-    GOCARDLESS_SECRET_ID !== 'YOUR_SECRET_ID' &&
-    GOCARDLESS_SECRET_KEY !== 'YOUR_SECRET_KEY'
-  );
+  return Boolean(GOCARDLESS_SECRET_ID) && Boolean(GOCARDLESS_SECRET_KEY);
 }
 
 // ── Types ──

@@ -2,23 +2,15 @@ import { Transaction, BankSyncConfig, ImportSource } from '../models/types';
 import { generateId } from '../utils/helpers';
 import { deduplicateAndPrepare } from './deduplication';
 import { insertTransactionBatch, getDatabase } from './database';
+import { PLAID_ENV } from '@env';
 
-/**
- * Bank statement sync service.
- *
- * Integrates with Plaid (US) or TrueLayer (UK/EU) to pull transactions
- * directly from the user's bank account. This module handles:
- *   1. OAuth link flow initiation (returns URL for WebView)
- *   2. Token exchange after user authorization
- *   3. Fetching transactions from the bank API
- *   4. Converting bank data to our internal format
- *   5. Deduplication before insert
- *
- * In production, the Plaid/TrueLayer secret keys live on a backend server.
- * The app communicates with your server, which proxies to the bank API.
- */
+const PLAID_HOST = PLAID_ENV === 'production'
+  ? 'https://production.plaid.com'
+  : PLAID_ENV === 'development'
+    ? 'https://development.plaid.com'
+    : 'https://sandbox.plaid.com';
 
-const PLAID_API_BASE = 'https://your-backend.com/api/plaid';
+const PLAID_API_BASE = `${PLAID_HOST}/api/plaid`;
 const TRUELAYER_API_BASE = 'https://your-backend.com/api/truelayer';
 
 // ── Bank connection management ──
