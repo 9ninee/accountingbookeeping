@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Transaction, MileageTrip, RoutePoint, PaginationParams, PaginatedResult, StorageTier } from '../models/types';
 
 const DB_NAME = 'uber_driver_tracker.db';
-const CURRENT_DB_VERSION = 2;
+const CURRENT_DB_VERSION = 3;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -88,6 +88,10 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
     await migrateToV2(database);
   }
 
+  if (currentVersion < 3) {
+    await migrateToV3(database);
+  }
+
   if (currentVersion < CURRENT_DB_VERSION) {
     await database.execAsync(`PRAGMA user_version = ${CURRENT_DB_VERSION}`);
   }
@@ -137,6 +141,22 @@ async function migrateToV2(database: SQLite.SQLiteDatabase): Promise<void> {
 
   // Migrate existing route_points JSON blobs to the new table
   await migrateRoutePointsToTable(database);
+}
+
+async function migrateToV3(database: SQLite.SQLiteDatabase): Promise<void> {
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS linked_banks (
+      id TEXT PRIMARY KEY,
+      requisition_id TEXT NOT NULL,
+      institution_id TEXT NOT NULL,
+      institution_name TEXT NOT NULL,
+      account_ids TEXT NOT NULL DEFAULT '[]',
+      linked_at TEXT NOT NULL DEFAULT (datetime('now')),
+      expires_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_linked_banks_institution ON linked_banks(institution_id);
+  `);
 }
 
 async function migrateRoutePointsToTable(database: SQLite.SQLiteDatabase): Promise<void> {

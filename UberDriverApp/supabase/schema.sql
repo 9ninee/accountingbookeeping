@@ -110,6 +110,31 @@ CREATE POLICY "Users can insert own route points"
 CREATE POLICY "Users can delete own route points"
   ON route_points FOR DELETE USING (auth.uid() = user_id);
 
+-- ── Linked Banks (Open Banking consents) ──
+CREATE TABLE IF NOT EXISTS linked_banks (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  requisition_id TEXT NOT NULL,
+  institution_id TEXT NOT NULL,
+  institution_name TEXT NOT NULL,
+  account_ids JSONB NOT NULL DEFAULT '[]',
+  linked_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_linked_banks_user ON linked_banks(user_id);
+
+ALTER TABLE linked_banks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own linked banks"
+  ON linked_banks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own linked banks"
+  ON linked_banks FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own linked banks"
+  ON linked_banks FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own linked banks"
+  ON linked_banks FOR DELETE USING (auth.uid() = user_id);
+
 -- ── Auto-update updated_at trigger ──
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
