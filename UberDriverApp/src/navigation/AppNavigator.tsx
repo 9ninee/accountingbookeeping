@@ -16,6 +16,7 @@ import AddTransactionScreen from '../screens/AddTransactionScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import TripDetailScreen from '../screens/TripDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import BankConnectionScreen from '../screens/BankConnectionScreen';
 
 export type RootTabParamList = {
   DashboardTab: undefined;
@@ -39,6 +40,7 @@ export type MileageStackParamList = {
 export type ImportStackParamList = {
   ImportHome: undefined;
   ImportReview: { reviewResult: ImportReviewResult };
+  BankConnection: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -135,6 +137,11 @@ function ImportNavigator() {
         name="ImportReview"
         component={ImportReviewScreen}
         options={{ title: 'Review Import' }}
+      />
+      <ImportStack.Screen
+        name="BankConnection"
+        component={BankConnectionScreen}
+        options={{ title: 'Bank Connection' }}
       />
     </ImportStack.Navigator>
   );

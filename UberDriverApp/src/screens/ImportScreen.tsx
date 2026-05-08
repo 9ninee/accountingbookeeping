@@ -6,7 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { importCSVFile } from '../services/csvImporter';
 import { importFromWallet } from '../services/walletImporter';
-import { initiateBankLink, getSavedBankConfigs, syncBankTransactions } from '../services/bankSyncService';
+import { getLinkedBanks } from '../services/openBankingService';
+import { syncAllBanks } from '../services/openBankingSyncPipeline';
 import { ImportStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
@@ -71,30 +72,22 @@ export default function ImportScreen() {
   };
 
   const handleBankSync = async () => {
+    const banks = await getLinkedBanks();
+    if (banks.length === 0) {
+      navigation.navigate('BankConnection' as any);
+      return;
+    }
     setLoading(true);
     setResult(null);
     try {
-      const configs = await getSavedBankConfigs();
-      if (configs.length === 0) {
-        const link = await initiateBankLink('plaid');
-        if (link) {
-          Alert.alert('Connect Your Bank', 'Bank linking requires opening a secure browser window. This feature requires a backend server with Plaid/TrueLayer API keys configured.');
-        } else {
-          Alert.alert('Bank Sync Setup', 'To use bank sync, configure your backend server with Plaid or TrueLayer API credentials.');
-        }
-      } else {
-        const today = new Date().toISOString().split('T')[0];
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-        const res = await syncBankTransactions(configs[0], thirtyDaysAgo, today, defaultType);
-        if (res.success) {
-          if (res.reviewResult) {
-            navigation.navigate('ImportReview', { reviewResult: res.reviewResult });
-          } else {
-            setResult({ inserted: res.inserted, duplicates: res.duplicates });
-            Alert.alert('Sync Complete', `${res.inserted} new transactions, ${res.duplicates} duplicates skipped.`);
-          }
-        }
-      }
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      const res = await syncAllBanks(thirtyDaysAgo, today, defaultType);
+      setResult({ inserted: res.totalInserted, duplicates: res.totalDuplicates });
+      const bankSummaries = res.banks.map(b =>
+        b.errors.length > 0 ? `${b.bankName}: ${b.errors[0]}` : `${b.bankName}: ${b.inserted} new`
+      ).join('\n');
+      Alert.alert('Sync Complete', bankSummaries || 'No new transactions.');
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }

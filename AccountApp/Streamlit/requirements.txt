@@ -1,5 +1,7 @@
 streamlit
 streamlit-aggrid
+supabase>=2.0.0
+python-dotenv>=1.0.0
 fuzzywuzzy 
 python-Levenshtein  # Optional: Makes fuzzywuzzy faster
 spacy-llm

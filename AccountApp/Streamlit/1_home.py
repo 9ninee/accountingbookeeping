@@ -200,9 +200,44 @@ st.markdown(f"""
 DATA_PATH = Path(__file__).parent / "Temp" / "Record" / "Data.csv"
 CAT_PATH = Path(__file__).parent / "Temp" / "Excel" / "Indcat.csv"
 
+# Try importing Supabase client
+try:
+    from utils.supabase_client import is_configured as supabase_configured, fetch_transactions
+    HAS_SUPABASE = True
+except ImportError:
+    HAS_SUPABASE = False
 
-@st.cache_data
+
+@st.cache_data(ttl=300)
 def load_data():
+    # Try cloud data first
+    if HAS_SUPABASE and supabase_configured():
+        try:
+            cloud_df = fetch_transactions()
+            if not cloud_df.empty:
+                # Merge with local CSV if it exists
+                try:
+                    local_df = _load_local_csv()
+                    if not local_df.empty:
+                        df = pd.concat([cloud_df, local_df], ignore_index=True)
+                        df = df.drop_duplicates(
+                            subset=["Transaction Date", "Transaction Description", "Debit Amount"],
+                            keep="first",
+                        )
+                        return df
+                except Exception:
+                    pass
+                return cloud_df
+        except Exception:
+            pass
+
+    # Fallback: local CSV only
+    return _load_local_csv()
+
+
+def _load_local_csv():
+    if not DATA_PATH.exists():
+        return pd.DataFrame(columns=["Transaction Date", "Transaction Description", "Debit Amount", "Credit Amount", "Categories"])
     df = pd.read_csv(DATA_PATH, encoding="latin1")
     df = df.dropna(axis=1, how="all")
     df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
@@ -244,6 +279,12 @@ with st.sidebar:
         </span>
     </div>
     """, unsafe_allow_html=True)
+
+    # Data source indicator
+    if HAS_SUPABASE and supabase_configured():
+        st.markdown(f'<div style="text-align:center;margin-bottom:16px;padding:6px 12px;border-radius:8px;background:{COLORS["primary"]}1A;"><span style="font-family:Inter;font-size:11px;font-weight:600;color:{COLORS["primary"]};">CLOUD + LOCAL DATA</span></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div style="text-align:center;margin-bottom:16px;padding:6px 12px;border-radius:8px;background:{COLORS["surfaceContainer"]};"><span style="font-family:Inter;font-size:11px;font-weight:600;color:{COLORS["onSurfaceVariant"]};">LOCAL CSV DATA</span></div>', unsafe_allow_html=True)
 
     st.markdown(f'<p style="font-family:Inter,sans-serif;font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{COLORS["onSurfaceVariant"]};">FILTERS</p>', unsafe_allow_html=True)
 

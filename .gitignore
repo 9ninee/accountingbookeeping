@@ -8,9 +8,11 @@ UberDriverApp/.env
 UberDriverApp/.env.local
 UberDriverApp/.env.production
 
-# .env.safe is the template (no secrets) — it IS committed
+# Templates (no secrets) — these ARE committed
 !.env.safe
+!.env.example
 !UberDriverApp/.env.safe
+!AccountApp/Streamlit/.env.example
 
 # OS
 .DS_Store
