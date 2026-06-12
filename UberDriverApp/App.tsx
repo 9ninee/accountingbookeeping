@@ -21,6 +21,7 @@ import { getDatabase } from './src/services/database';
 import { archiveOldTrips } from './src/services/storageManager';
 import { isSupabaseConfigured } from './src/services/supabaseClient';
 import { onAuthStateChange, getCurrentSession } from './src/services/authService';
+import { autoSyncIfDue } from './src/services/cloudBankService';
 import AuthScreen from './src/screens/AuthScreen';
 import { Colors } from './src/theme/colors';
 import { Session } from '@supabase/supabase-js';
@@ -56,6 +57,8 @@ export default function App() {
       getCurrentSession().then((s) => {
         setSession(s);
         setIsReady(true);
+        // Throttled background bank sync (max once / 24h, never blocks startup)
+        if (s?.user) autoSyncIfDue().catch(() => {});
       }).catch(() => setIsReady(true));
 
       const sub = onAuthStateChange((s) => setSession(s));

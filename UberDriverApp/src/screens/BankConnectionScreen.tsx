@@ -13,55 +13,134 @@ import {
   completeBankLink,
   getLinkedBanks,
   removeLinkedBank,
-  Institution,
-  LinkedBank,
 } from '../services/openBankingService';
 import {
   syncAllBanks,
   getConsentStatus,
 } from '../services/openBankingSyncPipeline';
+import {
+  isCloudBankAvailable,
+  listCloudBanks,
+  startCloudLink,
+  checkCloudLink,
+  getCloudConnections,
+  removeCloudConnection,
+  syncCloudBanks,
+} from '../services/cloudBankService';
 
 type Step = 'overview' | 'select_bank' | 'linking';
 
+/**
+ * Provider modes:
+ *  - cloud:  Enable Banking via the bank-sync Supabase Edge Function (free,
+ *            secrets stay server-side). Used whenever the user is signed in.
+ *  - direct: legacy GoCardless straight from the device (only for accounts
+ *            created before GoCardless closed new signups in July 2025).
+ */
+type Mode = 'cloud' | 'direct' | 'none';
+
+interface DisplayBank {
+  id: string;
+  name: string;
+  sub: string; // BIC (direct) or country (cloud)
+  country?: string;
+}
+
+interface DisplayConnection {
+  id: string;
+  institutionName: string;
+  accountCount: number;
+  daysRemaining: number;
+  isExpired: boolean;
+  isPending: boolean;
+}
+
 export default function BankConnectionScreen() {
+  const [mode, setMode] = useState<Mode>('none');
   const [step, setStep] = useState<Step>('overview');
-  const [linkedBanks, setLinkedBanks] = useState<LinkedBank[]>([]);
-  const [consentInfo, setConsentInfo] = useState<Array<{
-    bankName: string; daysRemaining: number; isExpired: boolean; accountCount: number;
-  }>>([]);
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [connections, setConnections] = useState<DisplayConnection[]>([]);
+  const [allBanks, setAllBanks] = useState<DisplayBank[]>([]);
+  const [banks, setBanks] = useState<DisplayBank[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
-  const [pendingReqId, setPendingReqId] = useState<string | null>(null);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [pendingInstName, setPendingInstName] = useState<string>('');
 
-  const loadOverview = useCallback(async () => {
+  const resolveMode = useCallback(async (): Promise<Mode> => {
+    if (await isCloudBankAvailable()) return 'cloud';
+    if (isOpenBankingConfigured()) return 'direct';
+    return 'none';
+  }, []);
+
+  const loadOverview = useCallback(async (activeMode: Mode) => {
     try {
-      const banks = await getLinkedBanks();
-      setLinkedBanks(banks);
-      if (banks.length > 0) {
-        const status = await getConsentStatus();
-        setConsentInfo(status);
+      if (activeMode === 'cloud') {
+        const conns = await getCloudConnections();
+        setConnections(
+          conns.map((c) => ({
+            id: c.id,
+            institutionName: c.institutionName,
+            accountCount: c.accountCount,
+            daysRemaining: c.daysRemaining,
+            isExpired: c.isExpired,
+            isPending: c.status === 'pending',
+          }))
+        );
+      } else if (activeMode === 'direct') {
+        const banksLocal = await getLinkedBanks();
+        const status = banksLocal.length > 0 ? await getConsentStatus() : [];
+        setConnections(
+          banksLocal.map((b, idx) => ({
+            id: b.id,
+            institutionName: b.institutionName,
+            accountCount: b.accountIds.length,
+            daysRemaining: status[idx]?.daysRemaining ?? 0,
+            isExpired: status[idx]?.isExpired ?? false,
+            isPending: false,
+          }))
+        );
       }
     } catch {}
   }, []);
 
-  useEffect(() => { loadOverview(); }, [loadOverview]);
+  useEffect(() => {
+    (async () => {
+      const m = await resolveMode();
+      setMode(m);
+      await loadOverview(m);
+    })();
+  }, [resolveMode, loadOverview]);
 
   const handleSelectBank = async () => {
-    if (!isOpenBankingConfigured()) {
+    if (mode === 'none') {
       Alert.alert(
         'Setup Required',
-        'Add your GoCardless credentials to .env file.\n\nRegister free at bankaccountdata.gocardless.com'
+        'Bank sync is free but needs a one-time setup:\n\n' +
+          '1. Sign in to the app (Settings tab) so your private Supabase backend can sync for you.\n' +
+          '2. Deploy the bank-sync function with your free Enable Banking key.\n\n' +
+          'Full guide: docs/FREE_BANK_SYNC.md in the repo.'
       );
       return;
     }
     setLoading(true);
     try {
-      const list = await getInstitutions('GB');
-      setInstitutions(list);
+      let list: DisplayBank[];
+      if (mode === 'cloud') {
+        const cloudBanks = await listCloudBanks('GB');
+        list = cloudBanks.map((b) => ({
+          id: `${b.country}:${b.name}`,
+          name: b.name,
+          sub: b.country,
+          country: b.country,
+        }));
+      } else {
+        const insts = await getInstitutions('GB');
+        list = insts.map((i) => ({ id: i.id, name: i.name, sub: i.bic || i.id }));
+      }
+      setAllBanks(list);
+      setBanks(list);
       setStep('select_bank');
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -72,22 +151,34 @@ export default function BankConnectionScreen() {
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.length < 2) {
-      const list = await getInstitutions('GB');
-      setInstitutions(list);
+      setBanks(allBanks);
       return;
     }
-    const results = await searchInstitutions(query, 'GB');
-    setInstitutions(results);
+    if (mode === 'cloud') {
+      const q = query.toLowerCase();
+      setBanks(allBanks.filter((b) => b.name.toLowerCase().includes(q)));
+    } else {
+      const results = await searchInstitutions(query, 'GB');
+      setBanks(results.map((i) => ({ id: i.id, name: i.name, sub: i.bic || i.id })));
+    }
   };
 
-  const handleLinkBank = async (inst: Institution) => {
+  const handleLinkBank = async (bank: DisplayBank) => {
     setLoading(true);
     try {
-      const req = await createRequisition(inst.id);
-      setPendingReqId(req.id);
-      setPendingInstName(inst.name);
+      let authUrl: string;
+      if (mode === 'cloud') {
+        const { url, state } = await startCloudLink(bank.name, bank.country ?? 'GB');
+        setPendingToken(state);
+        authUrl = url;
+      } else {
+        const req = await createRequisition(bank.id);
+        setPendingToken(req.id);
+        authUrl = req.link;
+      }
+      setPendingInstName(bank.name);
       setStep('linking');
-      await Linking.openURL(req.link);
+      await Linking.openURL(authUrl);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     }
@@ -95,16 +186,28 @@ export default function BankConnectionScreen() {
   };
 
   const handleCheckLink = async () => {
-    if (!pendingReqId) return;
+    if (!pendingToken) return;
     setLoading(true);
     try {
-      const bank = await completeBankLink(pendingReqId, pendingInstName);
-      if (bank) {
-        Alert.alert('Connected', `${pendingInstName} linked with ${bank.accountIds.length} account(s).`);
-        setPendingReqId(null);
+      let linked = false;
+      let accountCount = 0;
+
+      if (mode === 'cloud') {
+        const res = await checkCloudLink(pendingToken);
+        linked = res.status === 'active';
+        accountCount = res.accountCount;
+      } else {
+        const bank = await completeBankLink(pendingToken, pendingInstName);
+        linked = Boolean(bank);
+        accountCount = bank?.accountIds.length ?? 0;
+      }
+
+      if (linked) {
+        Alert.alert('Connected', `${pendingInstName} linked with ${accountCount} account(s).`);
+        setPendingToken(null);
         setPendingInstName('');
         setStep('overview');
-        await loadOverview();
+        await loadOverview(mode);
       } else {
         Alert.alert('Pending', 'Bank authorization not yet complete. Please finish the process in your browser and try again.');
       }
@@ -118,21 +221,36 @@ export default function BankConnectionScreen() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
-      const result = await syncAllBanks(thirtyDaysAgo, today);
-
       const parts: string[] = [];
-      for (const bank of result.banks) {
-        if (bank.errors.length > 0) {
-          parts.push(`${bank.bankName}: ${bank.errors[0]}`);
-        } else {
-          parts.push(`${bank.bankName}: ${bank.inserted} new, ${bank.duplicates} skipped`);
+
+      if (mode === 'cloud') {
+        const result = await syncCloudBanks();
+        for (const s of result.summaries) {
+          if (s.errors.length > 0) {
+            parts.push(`${s.bankName}: ${s.errors[0]}`);
+          } else {
+            parts.push(`${s.bankName}: ${s.inserted} new, ${s.skipped} skipped`);
+          }
         }
-      }
-      if (result.balances.length > 0) {
-        const bal = result.balances[0];
-        parts.push(`Balance: ${bal.currency} ${bal.amount.toFixed(2)}`);
+        if (result.pulledToDevice > 0) {
+          parts.push(`Pulled ${result.pulledToDevice} txns to this device`);
+        }
+        if (parts.length === 0) parts.push('No active bank connections to sync');
+      } else {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        const result = await syncAllBanks(thirtyDaysAgo, today);
+        for (const bank of result.banks) {
+          if (bank.errors.length > 0) {
+            parts.push(`${bank.bankName}: ${bank.errors[0]}`);
+          } else {
+            parts.push(`${bank.bankName}: ${bank.inserted} new, ${bank.duplicates} skipped`);
+          }
+        }
+        if (result.balances.length > 0) {
+          const bal = result.balances[0];
+          parts.push(`Balance: ${bal.currency} ${bal.amount.toFixed(2)}`);
+        }
       }
       setSyncResult(parts.join('\n'));
     } catch (e: any) {
@@ -141,23 +259,38 @@ export default function BankConnectionScreen() {
     setSyncing(false);
   };
 
-  const handleRemoveBank = (bank: LinkedBank) => {
+  const handleRemoveBank = (conn: DisplayConnection) => {
     Alert.alert(
       'Remove Bank',
-      `Disconnect ${bank.institutionName}? Your imported transactions will be kept.`,
+      `Disconnect ${conn.institutionName}? Your imported transactions will be kept.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            await removeLinkedBank(bank.id);
-            await loadOverview();
+            try {
+              if (mode === 'cloud') {
+                await removeCloudConnection(conn.id);
+              } else {
+                await removeLinkedBank(conn.id);
+              }
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            }
+            await loadOverview(mode);
           },
         },
       ]
     );
   };
+
+  const subtitle =
+    mode === 'cloud'
+      ? 'Connect your bank to automatically import transactions. Synced securely by your private Supabase backend via Enable Banking (free for your own accounts).'
+      : mode === 'direct'
+        ? 'Connect your bank account to automatically import transactions. Powered by GoCardless (legacy).'
+        : 'Connect your bank to automatically import transactions — free, with a one-time setup. Sign in first, then see docs/FREE_BANK_SYNC.md.';
 
   // ── Overview ──
   if (step === 'overview') {
@@ -167,56 +300,57 @@ export default function BankConnectionScreen() {
           <Text style={styles.headerBadgeText}>OPEN BANKING</Text>
         </View>
         <Text style={styles.header}>Bank Connections</Text>
-        <Text style={styles.subtitle}>
-          Connect your bank account to automatically import transactions. Powered by GoCardless (free).
-        </Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
 
         {/* Linked Banks */}
-        {linkedBanks.length > 0 && (
+        {connections.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>CONNECTED BANKS</Text>
-            {linkedBanks.map((bank, idx) => {
-              const consent = consentInfo[idx];
-              const isExpired = consent?.isExpired ?? false;
-              const daysLeft = consent?.daysRemaining ?? 0;
-
-              return (
-                <View key={bank.id} style={styles.bankCard}>
-                  <View style={styles.bankCardHeader}>
-                    <View style={styles.bankIconWrap}>
-                      <Text style={styles.bankIconText}>{bank.institutionName[0]}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.bankName}>{bank.institutionName}</Text>
-                      <Text style={styles.bankAccounts}>
-                        {bank.accountIds.length} account(s)
-                      </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleRemoveBank(bank)}>
-                      <Text style={styles.removeText}>Remove</Text>
-                    </TouchableOpacity>
+            {connections.map((conn) => (
+              <View key={conn.id} style={styles.bankCard}>
+                <View style={styles.bankCardHeader}>
+                  <View style={styles.bankIconWrap}>
+                    <Text style={styles.bankIconText}>{conn.institutionName[0]}</Text>
                   </View>
-                  <View style={styles.consentRow}>
-                    <View style={[
-                      styles.consentBadge,
-                      isExpired ? styles.consentExpired : daysLeft < 14 ? styles.consentWarning : styles.consentOk,
-                    ]}>
-                      <Text style={styles.consentBadgeText}>
-                        {isExpired ? 'EXPIRED' : `${daysLeft}d remaining`}
-                      </Text>
-                    </View>
-                    {isExpired && (
-                      <TouchableOpacity
-                        style={styles.renewBtn}
-                        onPress={() => handleLinkBank({ id: bank.institutionId, name: bank.institutionName } as Institution)}
-                      >
-                        <Text style={styles.renewBtnText}>Re-link</Text>
-                      </TouchableOpacity>
-                    )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.bankName}>{conn.institutionName}</Text>
+                    <Text style={styles.bankAccounts}>
+                      {conn.isPending ? 'Authorization pending' : `${conn.accountCount} account(s)`}
+                    </Text>
                   </View>
+                  <TouchableOpacity onPress={() => handleRemoveBank(conn)}>
+                    <Text style={styles.removeText}>Remove</Text>
+                  </TouchableOpacity>
                 </View>
-              );
-            })}
+                <View style={styles.consentRow}>
+                  <View style={[
+                    styles.consentBadge,
+                    conn.isExpired ? styles.consentExpired
+                      : conn.isPending || conn.daysRemaining < 14 ? styles.consentWarning
+                      : styles.consentOk,
+                  ]}>
+                    <Text style={styles.consentBadgeText}>
+                      {conn.isExpired ? 'EXPIRED'
+                        : conn.isPending ? 'PENDING'
+                        : `${conn.daysRemaining}d remaining`}
+                    </Text>
+                  </View>
+                  {conn.isExpired && (
+                    <TouchableOpacity
+                      style={styles.renewBtn}
+                      onPress={() => handleLinkBank({
+                        id: conn.id,
+                        name: conn.institutionName,
+                        sub: '',
+                        country: 'GB',
+                      })}
+                    >
+                      <Text style={styles.renewBtnText}>Re-link</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ))}
 
             {/* Sync Button */}
             <TouchableOpacity
@@ -241,7 +375,7 @@ export default function BankConnectionScreen() {
 
         {/* Add Bank */}
         <Text style={styles.sectionTitle}>
-          {linkedBanks.length > 0 ? 'ADD ANOTHER BANK' : 'GET STARTED'}
+          {connections.length > 0 ? 'ADD ANOTHER BANK' : 'GET STARTED'}
         </Text>
         <TouchableOpacity
           style={[styles.addBankBtn, loading && styles.btnDisabled]}
@@ -260,11 +394,14 @@ export default function BankConnectionScreen() {
 
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>How it works</Text>
-          <Text style={styles.infoStep}>1. Select your bank from 2,400+ UK/EU banks</Text>
+          <Text style={styles.infoStep}>1. Select your bank from 2,500+ UK/EU banks</Text>
           <Text style={styles.infoStep}>2. Log in securely via your bank's website</Text>
           <Text style={styles.infoStep}>3. Grant read-only access to transactions</Text>
-          <Text style={styles.infoStep}>4. Transactions sync automatically</Text>
-          <Text style={styles.infoNote}>Consent expires after 90 days (PSD2 regulation).</Text>
+          <Text style={styles.infoStep}>4. Transactions sync daily — automatically</Text>
+          <Text style={styles.infoNote}>
+            Read-only access. Consent expires after 90 days (PSD2) — re-link to renew.
+            Your bank credentials are never seen by this app.
+          </Text>
         </View>
       </ScrollView>
     );
@@ -289,7 +426,7 @@ export default function BankConnectionScreen() {
         />
 
         <FlatList
-          data={institutions}
+          data={banks}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 100 }}
           renderItem={({ item }) => (
@@ -303,7 +440,7 @@ export default function BankConnectionScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.instName}>{item.name}</Text>
-                <Text style={styles.instBic}>{item.bic || item.id}</Text>
+                <Text style={styles.instBic}>{item.sub}</Text>
               </View>
               <Text style={styles.instArrow}>→</Text>
             </TouchableOpacity>
@@ -342,7 +479,7 @@ export default function BankConnectionScreen() {
 
         <TouchableOpacity
           style={styles.cancelLink}
-          onPress={() => { setStep('overview'); setPendingReqId(null); }}
+          onPress={() => { setStep('overview'); setPendingToken(null); }}
         >
           <Text style={styles.cancelLinkText}>Cancel</Text>
         </TouchableOpacity>

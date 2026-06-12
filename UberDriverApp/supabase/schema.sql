@@ -111,6 +111,9 @@ CREATE POLICY "Users can delete own route points"
   ON route_points FOR DELETE USING (auth.uid() = user_id);
 
 -- ── Linked Banks (Open Banking consents) ──
+-- provider: 'gocardless' (legacy, direct-from-app) or 'enable_banking'
+--           (synced server-side by the bank-sync Edge Function)
+-- requisition_id: GoCardless requisition ID, or the Enable Banking auth state token
 CREATE TABLE IF NOT EXISTS linked_banks (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -119,10 +122,22 @@ CREATE TABLE IF NOT EXISTS linked_banks (
   institution_name TEXT NOT NULL,
   account_ids JSONB NOT NULL DEFAULT '[]',
   linked_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at TIMESTAMPTZ NOT NULL
+  expires_at TIMESTAMPTZ NOT NULL,
+  provider TEXT NOT NULL DEFAULT 'gocardless',
+  session_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  last_synced_at TIMESTAMPTZ
 );
 
+-- Migration for deployments created before the bank-sync Edge Function existed
+ALTER TABLE linked_banks ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 'gocardless';
+ALTER TABLE linked_banks ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE linked_banks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE linked_banks ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_linked_banks_user ON linked_banks(user_id);
+CREATE INDEX IF NOT EXISTS idx_linked_banks_state ON linked_banks(requisition_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_source_ref ON transactions(user_id, source_reference);
 
 ALTER TABLE linked_banks ENABLE ROW LEVEL SECURITY;
 
