@@ -6,8 +6,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { importCSVFile } from '../services/csvImporter';
 import { importFromWallet } from '../services/walletImporter';
-import { getLinkedBanks } from '../services/openBankingService';
-import { syncAllBanks } from '../services/openBankingSyncPipeline';
+import {
+  isCloudBankAvailable,
+  getCloudConnections,
+  syncCloudBanks,
+} from '../services/cloudBankService';
 import { ImportStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
@@ -72,22 +75,29 @@ export default function ImportScreen() {
   };
 
   const handleBankSync = async () => {
-    const banks = await getLinkedBanks();
-    if (banks.length === 0) {
+    const available = await isCloudBankAvailable();
+    if (!available) {
+      Alert.alert(
+        'Sign In Required',
+        'Bank sync uses your private Supabase backend. Sign in from the Settings tab first.'
+      );
+      return;
+    }
+    const connections = await getCloudConnections();
+    const active = connections.filter((c) => c.status === 'active' && !c.isExpired);
+    if (active.length === 0) {
       navigation.navigate('BankConnection' as any);
       return;
     }
     setLoading(true);
     setResult(null);
     try {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
-      const res = await syncAllBanks(thirtyDaysAgo, today, defaultType);
-      setResult({ inserted: res.totalInserted, duplicates: res.totalDuplicates });
-      const bankSummaries = res.banks.map(b =>
-        b.errors.length > 0 ? `${b.bankName}: ${b.errors[0]}` : `${b.bankName}: ${b.inserted} new`
-      ).join('\n');
-      Alert.alert('Sync Complete', bankSummaries || 'No new transactions.');
+      const res = await syncCloudBanks(defaultType);
+      setResult({ inserted: res.totalInserted, duplicates: res.totalSkipped });
+      const summaries = res.summaries
+        .map((s) => (s.errors.length > 0 ? `${s.bankName}: ${s.errors[0]}` : `${s.bankName}: ${s.inserted} new`))
+        .join('\n');
+      Alert.alert('Sync Complete', summaries || 'No new transactions.');
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }
@@ -219,7 +229,7 @@ export default function ImportScreen() {
             </View>
             <View>
               <Text style={styles.methodTitle}>Bank Sync</Text>
-              <Text style={styles.methodDesc}>REAL-TIME PLAID</Text>
+              <Text style={styles.methodDesc}>FREE · ENABLE BANKING</Text>
             </View>
           </View>
           <TouchableOpacity
