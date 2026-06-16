@@ -9,32 +9,67 @@
     "splash": {
       "backgroundColor": "#1a1a2e"
     },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.uberdrivertracker.app",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We need your location to track mileage while driving.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need background location access to track mileage during your Uber trips.",
-        "UIBackgroundModes": ["location"]
+        "NSLocationWhenInUseUsageDescription": "We need your location to track mileage while driving for accurate IRS deduction calculations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location access is required to accurately track mileage during your driving trips, even when the app is minimized. This ensures complete trip recording for tax deductions.",
+        "UIBackgroundModes": ["location"],
+        "NSDocumentsFolderUsageDescription": "Access to documents is needed to import bank statement CSV files for transaction tracking."
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+          }
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.uberdrivertracker.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "READ_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to track driving mileage for tax deductions.",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to track mileage in the background during your driving trips.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to track driving mileage.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       "expo-document-picker",
       "expo-file-system",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-crypto"
     ]
   }
 }

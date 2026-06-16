@@ -1,5 +1,7 @@
 streamlit
 streamlit-aggrid
+supabase>=2.0.0
+python-dotenv>=1.0.0
 fuzzywuzzy 
 python-Levenshtein  # Optional: Makes fuzzywuzzy faster
 spacy-llm
@@ -24,6 +26,7 @@ transformers>=4.36.0
 langchain==0.2.1
 
 # 視覺化
+plotly>=5.18.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 

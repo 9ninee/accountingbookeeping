@@ -1,5 +1,5 @@
-import { Transaction, DuplicateCandidate } from '../models/types';
-import { getAllTransactionsForDedup } from './database';
+import { Transaction, DuplicateCandidate, ImportReviewItem, ImportReviewResult } from '../models/types';
+import { getTransactionsForDedupInRange, findTransactionsByDedupHash, getAllTransactionsForDedup } from './database';
 
 /**
  * Deduplication engine for transactions arriving from multiple sources
@@ -7,23 +7,78 @@ import { getAllTransactionsForDedup } from './database';
  *
  * Uses a multi-signal scoring approach:
  *   1. Exact source reference match  → 1.0 confidence (definite duplicate)
- *   2. Same date + same amount + similar description → 0.9 confidence
- *   3. Date within 1 day + same amount + similar description → 0.75 confidence
- *   4. Same amount + similar description within 3 days → 0.6 confidence
+ *   2. Hash-based fast path (date+amount+normalized description) → 1.0
+ *   3. Same date + same amount + similar description → 0.95 confidence
+ *   4. Date within 1 day + same amount + similar description → 0.80 confidence
+ *   5. Same amount + similar description within 3 days → 0.60 confidence
  *
  * Anything >= DUPLICATE_THRESHOLD is flagged as a duplicate.
  */
 
 const DUPLICATE_THRESHOLD = 0.75;
 const DESCRIPTION_SIMILARITY_THRESHOLD = 0.6;
+const AMOUNT_TOLERANCE = 0.02; // $0.02 tolerance for currency conversion differences
 
+/**
+ * Generate a dedup hash for fast O(1) lookups.
+ * Hash = lowercase(date + "|" + amount_rounded_2dp + "|" + normalized_description)
+ */
+export function generateDedupHash(date: string, amount: number, description: string): string {
+  const normalDate = date.split('T')[0]; // strip time if present
+  const normalAmount = Math.abs(amount).toFixed(2);
+  const normalDesc = normalizeDescription(description);
+  return `${normalDate}|${normalAmount}|${normalDesc}`;
+}
+
+/**
+ * Check for duplicates using scalable date-windowed queries.
+ * Falls back to full scan for small datasets.
+ */
 export async function checkForDuplicates(
   incoming: Partial<Transaction>[]
 ): Promise<DuplicateCandidate[]> {
-  const existing = await getAllTransactionsForDedup();
+  if (incoming.length === 0) return [];
+
+  // Determine date range of incoming transactions
+  const dates = incoming
+    .map((t) => t.date)
+    .filter((d): d is string => !!d)
+    .sort();
+
+  let existing: Pick<Transaction, 'id' | 'date' | 'description' | 'amount' | 'sourceReference' | 'merchantName'>[];
+
+  if (dates.length > 0) {
+    // Add 3-day buffer on each side for fuzzy date matching
+    const minDate = shiftDate(dates[0], -3);
+    const maxDate = shiftDate(dates[dates.length - 1], 3);
+    existing = await getTransactionsForDedupInRange(minDate, maxDate);
+  } else {
+    // Fallback: load all (for cases where dates are missing)
+    existing = await getAllTransactionsForDedup();
+  }
+
+  // Also check for hash-based fast matches
+  const incomingHashes = incoming
+    .filter((t) => t.date && t.amount !== undefined && t.description)
+    .map((t) => generateDedupHash(t.date!, t.amount!, t.description!));
+  const existingHashes = await findTransactionsByDedupHash(incomingHashes);
+
   const duplicates: DuplicateCandidate[] = [];
 
   for (const newTxn of incoming) {
+    // Fast path: hash match
+    if (newTxn.date && newTxn.amount !== undefined && newTxn.description) {
+      const hash = generateDedupHash(newTxn.date, newTxn.amount, newTxn.description);
+      if (existingHashes.has(hash)) {
+        // Find the matching existing transaction for the result
+        const match = findBestMatch(newTxn, existing);
+        if (match) {
+          duplicates.push(match);
+          continue;
+        }
+      }
+    }
+
     const match = findBestMatch(newTxn, existing);
     if (match) {
       duplicates.push(match);
@@ -31,6 +86,42 @@ export async function checkForDuplicates(
   }
 
   return duplicates;
+}
+
+/**
+ * Check for duplicates within a batch (intra-batch dedup).
+ * Prevents importing the same transaction twice in a single batch.
+ */
+export function checkIntraBatchDuplicates(
+  incoming: Partial<Transaction>[]
+): Map<number, number> {
+  const duplicateMap = new Map<number, number>(); // index → duplicate_of_index
+  const seen = new Map<string, number>(); // hash → first seen index
+
+  for (let i = 0; i < incoming.length; i++) {
+    const txn = incoming[i];
+    if (!txn.date || txn.amount === undefined || !txn.description) continue;
+
+    const hash = generateDedupHash(txn.date, txn.amount, txn.description);
+
+    if (seen.has(hash)) {
+      duplicateMap.set(i, seen.get(hash)!);
+    } else {
+      seen.set(hash, i);
+    }
+
+    // Also check source reference uniqueness
+    if (txn.sourceReference) {
+      const refKey = `ref:${txn.sourceReference}`;
+      if (seen.has(refKey)) {
+        duplicateMap.set(i, seen.get(refKey)!);
+      } else {
+        seen.set(refKey, i);
+      }
+    }
+  }
+
+  return duplicateMap;
 }
 
 export function findBestMatch(
@@ -71,7 +162,7 @@ function calculateDuplicateScore(
 
   // Signal 2+: Amount, date, and description similarity
   const amountMatch = newTxn.amount !== undefined && existing.amount !== undefined
-    ? Math.abs(newTxn.amount - existing.amount) < 0.01
+    ? Math.abs(newTxn.amount - existing.amount) <= AMOUNT_TOLERANCE
     : false;
 
   if (!amountMatch) {
@@ -83,10 +174,7 @@ function calculateDuplicateScore(
     normalizeDescription(newTxn.description || ''),
     normalizeDescription(existing.description || '')
   );
-  const merchantMatch =
-    newTxn.merchantName && existing.merchantName
-      ? normalizeDescription(newTxn.merchantName) === normalizeDescription(existing.merchantName)
-      : false;
+  const merchantMatch = matchMerchants(newTxn.merchantName, existing.merchantName);
 
   // Same date + same amount + similar description
   if (daysDiff === 0 && (descSimilarity >= DESCRIPTION_SIMILARITY_THRESHOLD || merchantMatch)) {
@@ -120,6 +208,25 @@ function calculateDuplicateScore(
   }
 
   return { confidence: 0, reason: '' };
+}
+
+/**
+ * Match merchants with normalization — strips common suffixes like LLC, Inc, Ltd.
+ */
+function matchMerchants(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  return normalizeMerchant(a) === normalizeMerchant(b);
+}
+
+export function normalizeMerchant(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\b(llc|inc|ltd|corp|co|plc|gmbh|pty)\b/gi, '')
+    .replace(/[#*]\d+/g, '') // strip store/card numbers like #1234
+    .replace(/\d{4,}/g, '') // strip long number sequences (card numbers)
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // ── String similarity (Sørensen–Dice coefficient on bigrams) ──
@@ -175,33 +282,56 @@ function dateDifferenceInDays(dateA?: string, dateB?: string): number {
   return Math.abs(Math.round((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
 /**
- * Process a batch of incoming transactions: check for duplicates,
- * flag them, and return the cleaned list ready for insert.
+ * Process a batch of incoming transactions: check for duplicates
+ * (both intra-batch and against existing), flag them, and return
+ * the cleaned list ready for insert.
  */
 export async function deduplicateAndPrepare(
   incoming: Transaction[]
 ): Promise<{ clean: Transaction[]; duplicates: DuplicateCandidate[] }> {
+  // Step 1: Intra-batch dedup
+  const intraDups = checkIntraBatchDuplicates(incoming);
+
+  // Step 2: Check against existing DB
   const candidates = await checkForDuplicates(incoming);
   const duplicateNewIds = new Set(
     candidates.map((c) => {
-      // Match by sourceReference or by date+amount combo
       return incoming.find(
         (t) =>
           t.sourceReference === c.newTransaction.sourceReference ||
-          (t.date === c.newTransaction.date && t.amount === c.newTransaction.amount)
+          (t.date === c.newTransaction.date && Math.abs(t.amount - (c.newTransaction.amount ?? 0)) <= AMOUNT_TOLERANCE)
       )?.id;
     }).filter(Boolean)
   );
 
   const clean: Transaction[] = [];
-  for (const txn of incoming) {
+  for (let i = 0; i < incoming.length; i++) {
+    const txn = incoming[i];
+
+    // Generate dedup hash
+    txn.dedupHash = generateDedupHash(txn.date, txn.amount, txn.description);
+
+    // Check intra-batch duplicate
+    if (intraDups.has(i)) {
+      txn.isDuplicate = true;
+      const origIdx = intraDups.get(i)!;
+      txn.duplicateOfId = incoming[origIdx]?.id || null;
+    }
+
+    // Check against existing
     if (duplicateNewIds.has(txn.id)) {
       txn.isDuplicate = true;
       const match = candidates.find(
         (c) =>
           c.newTransaction.sourceReference === txn.sourceReference ||
-          (c.newTransaction.date === txn.date && c.newTransaction.amount === txn.amount)
+          (c.newTransaction.date === txn.date && Math.abs((c.newTransaction.amount ?? 0) - txn.amount) <= AMOUNT_TOLERANCE)
       );
       txn.duplicateOfId = match?.existingTransaction.id || null;
     }
@@ -209,4 +339,45 @@ export async function deduplicateAndPrepare(
   }
 
   return { clean, duplicates: candidates };
+}
+
+/**
+ * Prepare an import review result for the UI.
+ * Returns structured items with status and summary counts.
+ */
+export async function prepareImportReview(
+  incoming: Transaction[]
+): Promise<ImportReviewResult> {
+  const { clean, duplicates } = await deduplicateAndPrepare(incoming);
+
+  const dupMap = new Map<string, DuplicateCandidate>();
+  for (const dup of duplicates) {
+    const key = dup.newTransaction.sourceReference
+      || `${dup.newTransaction.date}|${dup.newTransaction.amount}`;
+    dupMap.set(key, dup);
+  }
+
+  const items: ImportReviewItem[] = clean.map((txn) => {
+    if (txn.isDuplicate) {
+      const key = txn.sourceReference || `${txn.date}|${txn.amount}`;
+      return {
+        transaction: txn,
+        status: 'duplicate' as const,
+        duplicateMatch: dupMap.get(key),
+      };
+    }
+    return {
+      transaction: txn,
+      status: 'new' as const,
+    };
+  });
+
+  return {
+    items,
+    summary: {
+      newCount: items.filter((i) => i.status === 'new').length,
+      duplicateCount: items.filter((i) => i.status === 'duplicate').length,
+      conflictCount: items.filter((i) => i.status === 'conflict').length,
+    },
+  };
 }

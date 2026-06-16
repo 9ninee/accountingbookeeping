@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { Transaction, TransactionType, TransactionCategory } from '../models/types';
+import { Transaction, TransactionType } from '../models/types';
 import { getTransactions, updateTransaction, deleteTransaction } from '../services/database';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { TransactionsStackParamList } from '../navigation/AppNavigator';
+import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/typography';
 
 type DetailRoute = RouteProp<TransactionsStackParamList, 'TransactionDetail'>;
 
@@ -29,6 +31,9 @@ export default function TransactionDetailScreen() {
     );
   }
 
+  const isBusiness = txn.type === 'business';
+  const isIncome = txn.amount >= 0;
+
   const toggleType = async () => {
     const newType: TransactionType = txn.type === 'business' ? 'personal' : 'business';
     await updateTransaction(txn.id, { type: newType });
@@ -36,7 +41,7 @@ export default function TransactionDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Transaction', 'Are you sure?', [
+    Alert.alert('Delete Transaction', 'Are you sure? This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -50,80 +55,172 @@ export default function TransactionDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.description}>{txn.description}</Text>
-      <Text style={[styles.amount, { color: txn.amount >= 0 ? '#4CAF50' : '#FF5722' }]}>
-        {formatCurrency(txn.amount, txn.currency)}
-      </Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Header */}
+      <View style={styles.headerCard}>
+        <Text style={styles.description}>{txn.description}</Text>
+        <Text style={[styles.amount, { color: isIncome ? Colors.primary : Colors.error }]}>
+          {isIncome ? '+' : ''}{formatCurrency(txn.amount, txn.currency)}
+        </Text>
+        <View style={styles.headerMeta}>
+          <View style={[
+            styles.typeBadge,
+            { backgroundColor: isBusiness ? Colors.primary + '1A' : Colors.tertiary + '1A' },
+          ]}>
+            <Text style={[styles.typeBadgeText, { color: isBusiness ? Colors.primary : Colors.tertiary }]}>
+              {isBusiness ? 'Business' : 'Personal'}
+            </Text>
+          </View>
+          {txn.validationStatus === 'verified' && (
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusDot, { backgroundColor: Colors.primary }]} />
+              <Text style={[styles.statusText, { color: Colors.primary }]}>Verified</Text>
+            </View>
+          )}
+          {txn.validationStatus === 'conflict' && (
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusDot, { backgroundColor: Colors.error }]} />
+              <Text style={[styles.statusText, { color: Colors.error }]}>Conflict</Text>
+            </View>
+          )}
+        </View>
+      </View>
 
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Date</Text>
-        <Text style={styles.detailValue}>{formatDate(txn.date)}</Text>
+      {/* Details */}
+      <View style={styles.detailsCard}>
+        <DetailRow label="Date" value={formatDate(txn.date)} />
+        <DetailRow
+          label="Type"
+          value={txn.type}
+          onPress={toggleType}
+          actionText="tap to change"
+          valueColor={Colors.primary}
+        />
+        <DetailRow
+          label="Category"
+          value={txn.category?.replace(/_/g, ' ') || 'Uncategorized'}
+        />
+        <DetailRow
+          label="Import Source"
+          value={txn.importSource.replace(/_/g, ' ')}
+        />
+        {txn.merchantName && (
+          <DetailRow label="Merchant" value={txn.merchantName} />
+        )}
+        {txn.sourceReference && (
+          <DetailRow label="Reference" value={txn.sourceReference} />
+        )}
+        {txn.notes && (
+          <DetailRow label="Notes" value={txn.notes} />
+        )}
+        <DetailRow
+          label="Transaction ID"
+          value={`#${txn.id.slice(0, 12).toUpperCase()}`}
+          valueColor={Colors.onSurfaceVariant + '99'}
+        />
       </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Type</Text>
-        <TouchableOpacity onPress={toggleType}>
-          <Text style={[styles.detailValue, { color: '#4CAF50' }]}>
-            {txn.type} (tap to change)
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Category</Text>
-        <Text style={styles.detailValue}>{txn.category?.replace(/_/g, ' ') || 'Uncategorized'}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Import Source</Text>
-        <Text style={styles.detailValue}>{txn.importSource.replace(/_/g, ' ')}</Text>
-      </View>
-      {txn.merchantName && (
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Merchant</Text>
-          <Text style={styles.detailValue}>{txn.merchantName}</Text>
-        </View>
-      )}
-      {txn.sourceReference && (
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Reference</Text>
-          <Text style={styles.detailValue}>{txn.sourceReference}</Text>
-        </View>
-      )}
-      {txn.notes && (
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Notes</Text>
-          <Text style={styles.detailValue}>{txn.notes}</Text>
-        </View>
-      )}
+
+      {/* Duplicate Warning */}
       {txn.isDuplicate && (
-        <View style={[styles.detailRow, { borderColor: '#FF9800' }]}>
-          <Text style={[styles.detailLabel, { color: '#FF9800' }]}>Duplicate</Text>
-          <Text style={[styles.detailValue, { color: '#FF9800' }]}>Flagged as duplicate</Text>
+        <View style={styles.duplicateWarning}>
+          <Text style={styles.duplicateIcon}>!</Text>
+          <View>
+            <Text style={styles.duplicateTitle}>Flagged as Duplicate</Text>
+            <Text style={styles.duplicateText}>
+              This transaction matches an existing record and was auto-flagged.
+            </Text>
+          </View>
         </View>
       )}
 
-      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+      {/* Delete Button */}
+      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.7}>
         <Text style={styles.deleteBtnText}>Delete Transaction</Text>
       </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
+      <Text style={styles.deleteWarning}>
+        This action cannot be undone.
+      </Text>
     </ScrollView>
   );
 }
 
+function DetailRow({
+  label, value, onPress, actionText, valueColor,
+}: {
+  label: string; value: string; onPress?: () => void; actionText?: string; valueColor?: string;
+}) {
+  const ValueComponent = onPress ? TouchableOpacity : View;
+  return (
+    <View style={detailStyles.row}>
+      <Text style={detailStyles.label}>{label}</Text>
+      <ValueComponent onPress={onPress}>
+        <Text style={[detailStyles.value, valueColor ? { color: valueColor } : {}]}>
+          {value} {actionText ? `(${actionText})` : ''}
+        </Text>
+      </ValueComponent>
+    </View>
+  );
+}
+
+const detailStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.outlineVariant + '1A',
+  },
+  label: { fontSize: 14, color: Colors.onSurfaceVariant, fontFamily: Fonts.medium },
+  value: {
+    fontSize: 14, color: Colors.onSurface, fontFamily: Fonts.semiBold, textTransform: 'capitalize',
+    maxWidth: 200, textAlign: 'right',
+  },
+});
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23', padding: 16 },
-  loading: { color: '#888', textAlign: 'center', marginTop: 40 },
-  description: { color: '#fff', fontSize: 20, fontWeight: '600', marginBottom: 8 },
-  amount: { fontSize: 36, fontWeight: '700', marginBottom: 24 },
-  detailRow: {
-    flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#222',
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+  loading: { color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 40, fontFamily: Fonts.regular },
+
+  // Header
+  headerCard: {
+    backgroundColor: Colors.surfaceContainer, borderRadius: 20, padding: 24, marginTop: 8,
   },
-  detailLabel: { color: '#888', fontSize: 15 },
-  detailValue: { color: '#fff', fontSize: 15, fontWeight: '500', textTransform: 'capitalize' },
+  description: { fontSize: 22, fontFamily: Fonts.bold, color: Colors.onSurface, marginBottom: 8 },
+  amount: { fontSize: 36, fontFamily: Fonts.monoBold, marginBottom: 16 },
+  headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  typeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  typeBadgeText: { fontSize: 12, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 12, fontFamily: Fonts.bold, textTransform: 'uppercase' },
+
+  // Details
+  detailsCard: {
+    backgroundColor: Colors.surfaceContainerLow, borderRadius: 20, padding: 20, marginTop: 12,
+  },
+
+  // Duplicate
+  duplicateWarning: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.tertiary + '1A', borderRadius: 16, padding: 20, marginTop: 12,
+    borderWidth: 1, borderColor: Colors.tertiary + '33',
+  },
+  duplicateIcon: {
+    fontSize: 24, fontFamily: Fonts.bold, color: Colors.tertiary,
+    width: 40, height: 40, textAlign: 'center', lineHeight: 40,
+    borderRadius: 20, backgroundColor: Colors.tertiary + '33',
+  },
+  duplicateTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.tertiary, marginBottom: 2 },
+  duplicateText: { fontSize: 12, color: Colors.onSurfaceVariant, fontFamily: Fonts.regular },
+
+  // Delete
   deleteBtn: {
-    marginTop: 32, paddingVertical: 14, borderRadius: 10,
-    borderWidth: 1, borderColor: '#FF5722', alignItems: 'center',
+    marginTop: 32,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 16, borderRadius: 16,
+    backgroundColor: Colors.errorContainer + '33',
+    borderWidth: 1, borderColor: Colors.error + '4D',
   },
-  deleteBtnText: { color: '#FF5722', fontSize: 16, fontWeight: '600' },
+  deleteBtnText: { color: Colors.error, fontSize: 16, fontFamily: Fonts.bold },
+  deleteWarning: {
+    textAlign: 'center', color: Colors.onSurfaceVariant, fontSize: 10,
+    marginTop: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.6, fontFamily: Fonts.regular,
+  },
 });

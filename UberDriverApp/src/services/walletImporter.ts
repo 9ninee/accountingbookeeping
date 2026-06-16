@@ -81,6 +81,9 @@ export function walletToTransactions(
     notes: null,
     isDuplicate: false,
     duplicateOfId: null,
+    dedupHash: null,
+    validationStatus: 'unverified' as const,
+    matchedSourceIds: null,
     createdAt: now,
     updatedAt: now,
   }));
@@ -97,6 +100,7 @@ export async function importFromWallet(
   inserted: number;
   duplicates: number;
   errors: string[];
+  reviewResult?: import('../models/types').ImportReviewResult;
 }> {
   const walletTxns = parseWalletExport(jsonData);
   if (walletTxns.length === 0) {

@@ -1,0 +1,31 @@
+node_modules/
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+UberDriverApp/.env
+UberDriverApp/.env.local
+UberDriverApp/.env.production
+
+# Templates (no secrets) — these ARE committed
+!.env.safe
+!.env.example
+!UberDriverApp/.env.safe
+!AccountApp/Streamlit/.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Credentials
+*.p12
+*.key
+*.pem
+google-service-account.json
