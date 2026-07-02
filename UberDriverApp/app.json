@@ -22,18 +22,24 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to track mileage while driving for accurate IRS deduction calculations.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location access is required to accurately track mileage during your driving trips, even when the app is minimized. This ensures complete trip recording for tax deductions.",
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "NSDocumentsFolderUsageDescription": "Access to documents is needed to import bank statement CSV files for transaction tracking."
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
-            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
           },
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
-            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "C617.1"
+            ]
           }
         ]
       }
@@ -68,8 +74,7 @@
       "expo-document-picker",
       "expo-file-system",
       "expo-sqlite",
-      "expo-secure-store",
-      "expo-crypto"
+      "expo-secure-store"
     ]
   }
 }

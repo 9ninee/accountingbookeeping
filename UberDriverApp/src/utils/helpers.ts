@@ -63,9 +63,17 @@ export function getCurrentMonthRange(): { start: string; end: string } {
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0],
+    start: toLocalDateString(start),
+    end: toLocalDateString(end),
   };
+}
+
+/** Format a Date as YYYY-MM-DD using LOCAL time (toISOString shifts the day for non-UTC timezones). */
+function toLocalDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /**
@@ -79,8 +87,8 @@ export function getCurrentWeekRange(): { start: string; end: string } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
+    start: toLocalDateString(monday),
+    end: toLocalDateString(sunday),
   };
 }
 
