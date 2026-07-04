@@ -53,9 +53,27 @@ export interface CloudSyncResult {
 
 async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke('bank-sync', { body });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(await extractFunctionError(error));
   if (data?.error) throw new Error(data.error);
   return data as T;
+}
+
+/**
+ * supabase.functions.invoke wraps non-2xx responses in a FunctionsHttpError
+ * whose message is just "Edge Function returned a non-2xx status code".
+ * The function's real message ({error: "..."}) is in the attached Response.
+ */
+async function extractFunctionError(error: unknown): Promise<string> {
+  const ctx = (error as { context?: Response }).context;
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const payload = await ctx.json();
+      if (typeof payload?.error === 'string' && payload.error) return payload.error;
+    } catch {
+      // body already consumed or not JSON — fall back to the generic message
+    }
+  }
+  return (error as Error)?.message ?? 'Bank sync request failed';
 }
 
 /** Cloud bank sync requires Supabase to be configured AND a signed-in user. */
