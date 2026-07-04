@@ -10,9 +10,11 @@
  * them into SQLite, and the Streamlit dashboard reads them directly.
  *
  * Secrets (set via `supabase secrets set`):
- *   EB_APPLICATION_ID  — Enable Banking application ID (JWT kid)
- *   EB_PRIVATE_KEY     — PKCS8 PEM private key (raw or base64-encoded)
- *   CRON_SECRET        — shared secret for the scheduled cron_sync action
+ *   EB_APPLICATION_ID    — Enable Banking application ID (JWT kid) [EU/EEA banks]
+ *   EB_PRIVATE_KEY       — PKCS8 PEM private key (raw or base64-encoded)
+ *   MONZO_CLIENT_ID      — Monzo OAuth client (developers.monzo.com) [UK, own account]
+ *   MONZO_CLIENT_SECRET  — Monzo OAuth client secret (confidential client)
+ *   CRON_SECRET          — shared secret for the scheduled cron_sync action
  *
  * Deploy with: supabase functions deploy bank-sync --no-verify-jwt
  * (JWT verification is done in-code; the GET /callback arrives from a
@@ -38,6 +40,11 @@ import {
   ebToTransactionRow,
   isBooked,
 } from './mapper.ts';
+import {
+  MonzoTransaction,
+  isSettledMonzo,
+  monzoToTransactionRow,
+} from './monzo.ts';
 
 const EB_BASE = 'https://api.enablebanking.com';
 const CONSENT_DAYS = 90; // PSD2 default consent window
@@ -49,6 +56,15 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const EB_APPLICATION_ID = Deno.env.get('EB_APPLICATION_ID') ?? '';
 const EB_PRIVATE_KEY = Deno.env.get('EB_PRIVATE_KEY') ?? '';
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
+const MONZO_CLIENT_ID = Deno.env.get('MONZO_CLIENT_ID') ?? '';
+const MONZO_CLIENT_SECRET = Deno.env.get('MONZO_CLIENT_SECRET') ?? '';
+
+function ebConfigured(): boolean {
+  return Boolean(EB_APPLICATION_ID && EB_PRIVATE_KEY);
+}
+function monzoConfigured(): boolean {
+  return Boolean(MONZO_CLIENT_ID && MONZO_CLIENT_SECRET);
+}
 
 // ── Enable Banking auth ──
 
@@ -92,6 +108,87 @@ async function ebRequest<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`Enable Banking ${path} failed (${res.status}): ${body.slice(0, 300)}`);
   }
   return res.json() as Promise<T>;
+}
+
+// ── Monzo (personal OAuth) ──
+// Tokens live in the bank_tokens table (RLS on, NO policies: service-role only).
+// Monzo SCA limits transaction history to 90 days after each approval.
+
+const MONZO_API = 'https://api.monzo.com';
+const MONZO_AUTH = 'https://auth.monzo.com';
+const MONZO_HISTORY_DAYS = 89;
+
+interface MonzoTokens {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+}
+
+async function monzoTokenCall(params: Record<string, string>): Promise<MonzoTokens> {
+  const res = await fetch(`${MONZO_API}/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(params).toString(),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Monzo token request failed (${res.status}): ${body.slice(0, 300)}`);
+  }
+  return res.json() as Promise<MonzoTokens>;
+}
+
+async function saveMonzoTokens(linkedBankId: string, userId: string, t: MonzoTokens): Promise<void> {
+  const { error } = await serviceClient().from('bank_tokens').upsert({
+    linked_bank_id: linkedBankId,
+    user_id: userId,
+    access_token: t.access_token,
+    refresh_token: t.refresh_token ?? null,
+    expires_at: new Date(Date.now() + (t.expires_in ?? 3600) * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(`Could not store Monzo tokens: ${error.message}`);
+}
+
+/** Returns a live access token, refreshing (and rotating) if needed. */
+async function monzoAccessToken(conn: { id: string; user_id: string }): Promise<string> {
+  const { data, error } = await serviceClient()
+    .from('bank_tokens')
+    .select('access_token, refresh_token, expires_at')
+    .eq('linked_bank_id', conn.id)
+    .maybeSingle();
+  if (error || !data) throw new Error('Monzo tokens missing — re-link this bank');
+
+  if (new Date(data.expires_at).getTime() > Date.now() + 60_000) return data.access_token;
+  if (!data.refresh_token) throw new Error('Monzo session expired — re-link this bank');
+
+  const refreshed = await monzoTokenCall({
+    grant_type: 'refresh_token',
+    client_id: MONZO_CLIENT_ID,
+    client_secret: MONZO_CLIENT_SECRET,
+    refresh_token: data.refresh_token,
+  });
+  await saveMonzoTokens(conn.id, conn.user_id, refreshed);
+  return refreshed.access_token;
+}
+
+async function monzoGet<T>(token: string, path: string): Promise<T> {
+  const res = await fetch(`${MONZO_API}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Monzo ${path.split('?')[0]} failed (${res.status}): ${body.slice(0, 300)}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+/** Open (non-closed) account ids for the authorized Monzo user. */
+async function monzoAccountIds(token: string): Promise<string[]> {
+  const data = await monzoGet<{ accounts: Array<{ id: string; closed?: boolean }> }>(
+    token,
+    '/accounts'
+  );
+  return (data.accounts ?? []).filter((a) => !a.closed).map((a) => a.id);
 }
 
 // ── Supabase clients ──
@@ -240,6 +337,18 @@ async function syncConnection(
     }
   }
 
+  return dedupAndInsert(db, conn, incoming, summary, dateFrom, nowIso);
+}
+
+/** Shared by every provider: dedup incoming rows against the cloud, insert, stamp last_synced_at. */
+async function dedupAndInsert(
+  db: SupabaseClient,
+  conn: LinkedBankRow,
+  incoming: TransactionRow[],
+  summary: SyncSummary,
+  dateFrom: string,
+  nowIso: string
+): Promise<SyncSummary> {
   if (incoming.length === 0) return summary;
 
   // Dedup against what's already in the cloud (same window + overlap buffer)
@@ -293,18 +402,152 @@ async function syncConnection(
   return summary;
 }
 
+// ── Monzo sync core ──
+
+async function fetchMonzoTransactions(
+  token: string,
+  accountId: string,
+  dateFrom: string
+): Promise<MonzoTransaction[]> {
+  const all: MonzoTransaction[] = [];
+  let since = `${dateFrom}T00:00:00Z`;
+
+  while (all.length < 5000) {
+    const params = new URLSearchParams({ account_id: accountId, limit: '100', since });
+    params.append('expand[]', 'merchant');
+    const data = await monzoGet<{ transactions: MonzoTransaction[] }>(
+      token,
+      `/transactions?${params}`
+    );
+    const batch = data.transactions ?? [];
+    all.push(...batch);
+    if (batch.length < 100) break;
+    since = batch[batch.length - 1].id; // Monzo paginates by object id
+  }
+
+  return all;
+}
+
+async function syncMonzoConnection(
+  db: SupabaseClient,
+  conn: LinkedBankRow,
+  dateFromOverride?: string,
+  defaultType: 'business' | 'personal' = 'business'
+): Promise<SyncSummary> {
+  const summary: SyncSummary = {
+    bankName: conn.institution_name,
+    accountsProcessed: 0,
+    fetched: 0,
+    inserted: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  let token: string;
+  try {
+    token = await monzoAccessToken(conn);
+  } catch (e) {
+    summary.errors.push((e as Error).message);
+    return summary;
+  }
+
+  let dateFrom =
+    dateFromOverride ??
+    (conn.last_synced_at
+      ? dateOnly(new Date(new Date(conn.last_synced_at).getTime() - SYNC_OVERLAP_DAYS * 86400000).toISOString())
+      : dateOnly(daysFromNowIso(-MONZO_HISTORY_DAYS)));
+
+  // Monzo SCA: history older than ~90 days is inaccessible after approval
+  const minFrom = dateOnly(daysFromNowIso(-MONZO_HISTORY_DAYS));
+  if (dateFrom < minFrom) dateFrom = minFrom;
+
+  const nowIso = new Date().toISOString();
+  const incoming: TransactionRow[] = [];
+
+  for (const accountId of conn.account_ids) {
+    try {
+      const txns = await fetchMonzoTransactions(token, accountId, dateFrom);
+      summary.accountsProcessed++;
+      const settled = txns.filter(isSettledMonzo);
+      summary.fetched += settled.length;
+
+      for (const tx of settled) {
+        const row = monzoToTransactionRow(tx, {
+          id: crypto.randomUUID(),
+          userId: conn.user_id,
+          defaultType,
+          nowIso,
+        });
+        if (row) incoming.push(row);
+      }
+    } catch (e) {
+      summary.errors.push(`Account ${accountId.slice(0, 8)}…: ${(e as Error).message}`);
+    }
+  }
+
+  return dedupAndInsert(db, conn, incoming, summary, dateFrom, nowIso);
+}
+
 // ── Action handlers ──
 
 async function handleListBanks(country: string) {
-  const data = await ebRequest<{ aspsps: Array<{ name: string; country: string; logo?: string }> }>(
-    `/aspsps?country=${encodeURIComponent(country)}`
-  );
-  return json({
-    banks: (data.aspsps ?? []).map((a) => ({ name: a.name, country: a.country, logo: a.logo ?? null })),
+  const banks: Array<{ name: string; country: string; logo: string | null }> = [];
+
+  // Monzo is a direct connector (no aggregator) — always first for GB
+  if (monzoConfigured() && country.toUpperCase() === 'GB') {
+    banks.push({ name: 'Monzo', country: 'GB', logo: null });
+  }
+
+  if (ebConfigured()) {
+    try {
+      const data = await ebRequest<{ aspsps: Array<{ name: string; country: string; logo?: string }> }>(
+        `/aspsps?country=${encodeURIComponent(country)}`
+      );
+      banks.push(
+        ...(data.aspsps ?? []).map((a) => ({ name: a.name, country: a.country, logo: a.logo ?? null }))
+      );
+    } catch (e) {
+      // Enable Banking unavailable (e.g. app inactive) — still offer direct connectors
+      if (banks.length === 0) throw e;
+    }
+  }
+
+  return json({ banks });
+}
+
+async function handleMonzoStartLink(db: SupabaseClient, userId: string) {
+  const state = crypto.randomUUID();
+  const redirectUrl = `${SUPABASE_URL}/functions/v1/bank-sync/callback`;
+
+  const { error } = await db.from('linked_banks').insert({
+    id: crypto.randomUUID(),
+    user_id: userId,
+    requisition_id: state,
+    institution_id: 'GB:Monzo',
+    institution_name: 'Monzo',
+    account_ids: [],
+    linked_at: new Date().toISOString(),
+    expires_at: daysFromNowIso(CONSENT_DAYS),
+    provider: 'monzo',
+    session_id: null,
+    status: 'pending',
   });
+  if (error) throw new Error(`Could not store pending link: ${error.message}`);
+
+  const url =
+    `${MONZO_AUTH}/?client_id=${encodeURIComponent(MONZO_CLIENT_ID)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
+    `&response_type=code&state=${state}`;
+  return json({ url, state });
 }
 
 async function handleStartLink(db: SupabaseClient, userId: string, bankName: string, country: string) {
+  if (bankName === 'Monzo' && monzoConfigured()) {
+    return await handleMonzoStartLink(db, userId);
+  }
+  if (!ebConfigured()) {
+    throw new Error(`No provider available for ${bankName}. Configure Enable Banking secrets for aggregator banks.`);
+  }
   const state = crypto.randomUUID();
   const validUntil = daysFromNowIso(CONSENT_DAYS);
   const redirectUrl = `${SUPABASE_URL}/functions/v1/bank-sync/callback`;
@@ -362,6 +605,10 @@ async function handleCallback(url: URL): Promise<Response> {
     return html('<h1>Unknown link request</h1><p>Start the connection again from the app.</p>', 404);
   }
 
+  if (pending.provider === 'monzo') {
+    return await handleMonzoCallback(db, pending as LinkedBankRow, code);
+  }
+
   try {
     const session = await ebRequest<{
       session_id: string;
@@ -390,15 +637,67 @@ async function handleCallback(url: URL): Promise<Response> {
   }
 }
 
+async function handleMonzoCallback(db: SupabaseClient, pending: LinkedBankRow, code: string): Promise<Response> {
+  try {
+    const tokens = await monzoTokenCall({
+      grant_type: 'authorization_code',
+      client_id: MONZO_CLIENT_ID,
+      client_secret: MONZO_CLIENT_SECRET,
+      redirect_uri: `${SUPABASE_URL}/functions/v1/bank-sync/callback`,
+      code,
+    });
+    await saveMonzoTokens(pending.id, pending.user_id, tokens);
+
+    // Data endpoints stay 403 until the user approves access inside the Monzo
+    // app (SCA). If that hasn't happened yet, stay pending — check_link retries.
+    try {
+      const accountIds = await monzoAccountIds(tokens.access_token);
+      await db
+        .from('linked_banks')
+        .update({ account_ids: accountIds, status: 'active' })
+        .eq('id', pending.id);
+      return html(
+        `<h1>✓ Monzo connected</h1>
+         <p>${accountIds.length} account(s) linked. Return to the tracker app and tap
+         "I've Finished Authorization".</p>`
+      );
+    } catch {
+      return html(
+        `<h1>Almost there</h1>
+         <p><strong>Open your Monzo app and approve access</strong> (you'll see a prompt),
+         then return to the tracker and tap "I've Finished Authorization".</p>`
+      );
+    }
+  } catch (e) {
+    return html(`<h1>Connection failed</h1><p>${(e as Error).message}</p>`, 500);
+  }
+}
+
 async function handleCheckLink(db: SupabaseClient, userId: string, state: string) {
   const { data } = await db
     .from('linked_banks')
-    .select('status, account_ids, institution_name')
+    .select('*')
     .eq('requisition_id', state)
     .eq('user_id', userId)
     .maybeSingle();
 
   if (!data) return json({ status: 'not_found', accountCount: 0 });
+
+  // Monzo links stay pending until the in-app approval happens — retry here
+  if (data.provider === 'monzo' && data.status === 'pending') {
+    try {
+      const token = await monzoAccessToken(data as LinkedBankRow);
+      const accountIds = await monzoAccountIds(token);
+      await db
+        .from('linked_banks')
+        .update({ account_ids: accountIds, status: 'active' })
+        .eq('id', data.id);
+      return json({ status: 'active', accountCount: accountIds.length, bankName: data.institution_name });
+    } catch {
+      return json({ status: 'pending', accountCount: 0, bankName: data.institution_name });
+    }
+  }
+
   return json({
     status: data.status,
     accountCount: (data.account_ids ?? []).length,
@@ -446,7 +745,7 @@ async function handleSync(
     .from('linked_banks')
     .select('*')
     .eq('user_id', userId)
-    .eq('provider', 'enable_banking')
+    .in('provider', ['enable_banking', 'monzo'])
     .eq('status', 'active');
   if (connectionId) query = query.eq('id', connectionId);
 
@@ -455,7 +754,11 @@ async function handleSync(
 
   const summaries: SyncSummary[] = [];
   for (const row of (data ?? []) as LinkedBankRow[]) {
-    summaries.push(await syncConnection(db, row, dateFrom, defaultType));
+    summaries.push(
+      row.provider === 'monzo'
+        ? await syncMonzoConnection(db, row, dateFrom, defaultType)
+        : await syncConnection(db, row, dateFrom, defaultType)
+    );
   }
 
   return json({
@@ -468,18 +771,19 @@ async function handleSync(
 async function handleRemove(db: SupabaseClient, userId: string, connectionId: string) {
   const { data } = await db
     .from('linked_banks')
-    .select('session_id')
+    .select('session_id, provider')
     .eq('id', connectionId)
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (data?.session_id) {
+  if (data?.provider === 'enable_banking' && data?.session_id) {
     try {
       await ebRequest(`/sessions/${data.session_id}`, { method: 'DELETE' });
     } catch {
       // Session may already be expired at Enable Banking — local removal still proceeds
     }
   }
+  // Monzo: bank_tokens row is removed by ON DELETE CASCADE with linked_banks
 
   const { error } = await db
     .from('linked_banks')
@@ -495,13 +799,16 @@ async function handleCronSync() {
   const { data, error } = await db
     .from('linked_banks')
     .select('*')
-    .eq('provider', 'enable_banking')
+    .in('provider', ['enable_banking', 'monzo'])
     .eq('status', 'active');
   if (error) throw new Error(error.message);
 
   const summaries: Array<SyncSummary & { userId: string }> = [];
   for (const row of (data ?? []) as LinkedBankRow[]) {
-    const s = await syncConnection(db, row);
+    const s =
+      row.provider === 'monzo'
+        ? await syncMonzoConnection(db, row)
+        : await syncConnection(db, row);
     summaries.push({ ...s, userId: row.user_id });
   }
   return json({ summaries, syncedConnections: summaries.length });
@@ -522,9 +829,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Method not allowed' }, 405);
     }
 
-    if (!EB_APPLICATION_ID || !EB_PRIVATE_KEY) {
+    if (!ebConfigured() && !monzoConfigured()) {
       return json(
-        { error: 'Enable Banking not configured. Set EB_APPLICATION_ID and EB_PRIVATE_KEY secrets.' },
+        {
+          error:
+            'No bank provider configured. Set MONZO_CLIENT_ID + MONZO_CLIENT_SECRET (Monzo, UK) ' +
+            'and/or EB_APPLICATION_ID + EB_PRIVATE_KEY (Enable Banking, EU/EEA) secrets.',
+        },
         503
       );
     }

@@ -12,8 +12,9 @@ The free Open Banking landscape changed in 2025–2026:
 | **Plaid** | Sandbox free (fake data); free Trial plan is US/Canada-only | ⚠️ Keep your key for development testing with fake data. UK production isn't free. |
 | **Teller** | 100 free live connections | ❌ US banks only. |
 | **SimpleFIN Bridge** | $15/year | ❌ Not free, US only. |
-| **Enable Banking** | **Restricted Production: free, unlimited use for your OWN whitelisted accounts**, ~2,500 UK/EU banks | ✅ **Chosen.** Perfect for a personal driver-tracking app — you're syncing your own account. |
-| **Monzo / Starling personal APIs** | Free personal access tokens for your own account | ✅ Great extra option if you bank with them (no aggregator needed at all). |
+| **Enable Banking** | **Restricted Production: free, unlimited use for your OWN whitelisted accounts** | ⚠️ **EU/EEA banks only** — their licence doesn't cover the UK post-Brexit, so no UK banks in free mode. |
+| **Monzo (direct)** | Free OAuth API for your own account | ✅ **Built in.** The free UK path — no aggregator, no 90-day EB reconsent. See the Monzo section below. |
+| **Starling (direct)** | Free personal access tokens | ✅ Same idea as Monzo if you bank with Starling (connector not built yet — ask). |
 | **CSV import** | Always free, every bank | ✅ Already built into the app as the universal fallback. |
 
 ## How it works
@@ -113,6 +114,39 @@ why the design syncs **once daily** (cron + throttled launch sync) instead of
 polling — and why the manual "Sync All Banks" button may occasionally return a
 rate-limit error if pressed many times in one day. The sync window overlaps 3
 days each run, so late-booking transactions are never missed.
+
+## Monzo setup (UK — the free path)
+
+The `bank-sync` function has a built-in Monzo connector. One-time setup:
+
+1. Go to [developers.monzo.com](https://developers.monzo.com) and sign in
+   (enter your Monzo account email → tap the magic link → approve in the Monzo app).
+2. **Clients → New OAuth Client**:
+   - Name: `Uber Driver Tracker` (anything)
+   - Redirect URL: `https://YOUR_PROJECT_REF.supabase.co/functions/v1/bank-sync/callback`
+   - Confidentiality: **Confidential** (required for refresh tokens)
+3. Copy the **Client ID** and **Client Secret**, then:
+
+   ```bash
+   supabase secrets set MONZO_CLIENT_ID="oauth2client_..." MONZO_CLIENT_SECRET="mnzconf...."
+   supabase functions deploy bank-sync --no-verify-jwt
+   ```
+
+4. Run the updated `supabase/schema.sql` in the SQL Editor (adds the
+   service-role-only `bank_tokens` table).
+5. In the app: **Import → Bank Sync → Connect a Bank Account → Monzo**.
+   The browser opens Monzo's auth page (email magic link) → after the redirect,
+   **open the Monzo app and approve access** → back in the tracker, tap
+   **"I've Finished Authorization"** → **Sync All Banks**.
+
+Notes:
+- Monzo SCA limits API history to the **last ~90 days** — a daily sync never
+  notices this.
+- Access tokens auto-refresh server-side and live in `bank_tokens`, which has
+  RLS enabled with **no policies** — only the Edge Function (service role) can
+  read them. The app never sees bank tokens.
+- A Development-tier Monzo client only works for **your own account** — exactly
+  what we want.
 
 ## If you bank with Monzo or Starling
 

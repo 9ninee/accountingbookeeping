@@ -150,6 +150,19 @@ CREATE POLICY "Users can update own linked banks"
 CREATE POLICY "Users can delete own linked banks"
   ON linked_banks FOR DELETE USING (auth.uid() = user_id);
 
+-- ── Bank Provider Tokens (Monzo OAuth, etc.) ──
+-- RLS is enabled with NO policies ON PURPOSE: only the service role (the
+-- bank-sync Edge Function) may read or write tokens. The app never sees them.
+CREATE TABLE IF NOT EXISTS bank_tokens (
+  linked_bank_id UUID PRIMARY KEY REFERENCES linked_banks(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  access_token TEXT,
+  refresh_token TEXT,
+  expires_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE bank_tokens ENABLE ROW LEVEL SECURITY;
+
 -- ── Auto-update updated_at trigger ──
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
