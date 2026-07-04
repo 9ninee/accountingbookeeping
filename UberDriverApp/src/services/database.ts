@@ -771,7 +771,7 @@ export async function getMileageSummary(startDate: string, endDate: string): Pro
 
 export async function getDatabaseSize(): Promise<number> {
   try {
-    const FileSystem = await import('expo-file-system');
+    const FileSystem = await import('expo-file-system/legacy');
     const dbDir = `${FileSystem.documentDirectory}SQLite/`;
     const fileInfo = await FileSystem.getInfoAsync(`${dbDir}${DB_NAME}`);
     return (fileInfo as any)?.size ?? 0;

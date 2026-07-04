@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Transaction, CSVColumnMapping, ImportSource } from '../models/types';
 import { generateId } from '../utils/helpers';
 import { deduplicateAndPrepare } from './deduplication';
