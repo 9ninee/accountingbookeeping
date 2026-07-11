@@ -594,11 +594,12 @@ async function handleCallback(url: URL): Promise<Response> {
   }
 
   const db = serviceClient();
+  // Match the pending link by state alone, then dispatch by provider —
+  // both Monzo and Enable Banking redirect here.
   const { data: pending } = await db
     .from('linked_banks')
     .select('*')
     .eq('requisition_id', state)
-    .eq('provider', 'enable_banking')
     .maybeSingle();
 
   if (!pending) {
@@ -710,7 +711,7 @@ async function handleStatus(db: SupabaseClient, userId: string) {
     .from('linked_banks')
     .select('*')
     .eq('user_id', userId)
-    .eq('provider', 'enable_banking')
+    .in('provider', ['enable_banking', 'monzo'])
     .order('linked_at', { ascending: false });
   if (error) throw new Error(error.message);
 
