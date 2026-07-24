@@ -36,11 +36,13 @@ Built with **React Native (Expo)** for a single codebase that runs on both platf
 - Parses transaction ID, merchant name, amount, currency, and card info
 - Supports array format, object-with-transactions-key format, and single transaction objects
 
-#### Bank Statement Sync
-- Integration with **Plaid** (US) or **TrueLayer** (UK/EU) via your backend server
-- OAuth bank linking flow
-- Automatic transaction fetching with date range filtering
-- Filters out pending transactions
+#### Bank Statement Sync (free, server-side)
+- **Monzo** (UK) — built-in connector using Monzo's free personal OAuth API; syncs your own account with no aggregator and no fees
+- **Enable Banking** (EU/EEA) — free restricted-production mode for your own accounts
+- OAuth bank linking flow with in-app "I've Finished Authorization" confirmation
+- Credentials live only in Supabase Edge Function secrets — never in the app bundle
+- Filters out pending/declined transactions; settled ones only
+- Full setup guide: [`docs/FREE_BANK_SYNC.md`](docs/FREE_BANK_SYNC.md)
 
 ### 4. Automatic Deduplication Engine
 Since transactions can arrive from multiple sources simultaneously, the app uses a multi-signal scoring algorithm:
@@ -83,7 +85,7 @@ UberDriverApp/
     │   ├── mileageTracker.ts         # GPS tracking + background location
     │   ├── csvImporter.ts            # CSV file import pipeline
     │   ├── walletImporter.ts         # Apple Wallet / Google Pay import
-    │   └── bankSyncService.ts        # Plaid / TrueLayer bank sync
+    │   └── cloudBankService.ts       # Client for the bank-sync Edge Function
     ├── screens/
     │   ├── DashboardScreen.tsx       # Monthly summary overview
     │   ├── MileageScreen.tsx         # Trip tracking + history
@@ -128,17 +130,18 @@ npm test
 
 ## Bank Sync Setup (Optional)
 
-Bank sync requires a backend server with Plaid or TrueLayer API credentials. Update the API base URLs in `src/services/bankSyncService.ts`:
+Bank sync is free and runs entirely inside the `bank-sync` Supabase Edge Function
+(`supabase/functions/bank-sync/`) — no separate backend server needed. Provider
+credentials are Supabase secrets, never shipped in the app:
 
-```typescript
-const PLAID_API_BASE = 'https://your-backend.com/api/plaid';
-const TRUELAYER_API_BASE = 'https://your-backend.com/api/truelayer';
-```
+| Provider | Coverage | Secrets |
+|---|---|---|
+| **Monzo** (personal OAuth) | UK, your own account | `MONZO_CLIENT_ID`, `MONZO_CLIENT_SECRET` |
+| **Enable Banking** (restricted production) | EU/EEA, your own accounts | `EB_APPLICATION_ID`, `EB_PRIVATE_KEY` |
 
-Your backend needs to implement:
-- `POST /create-link-token` — generates a bank authorization URL
-- `POST /exchange-token` — exchanges the public token for access credentials
-- `POST /transactions` — fetches transactions for a date range
+Step-by-step setup (including the Monzo OAuth client and the daily sync cron)
+is in [`docs/FREE_BANK_SYNC.md`](docs/FREE_BANK_SYNC.md). Any other bank works
+via the built-in CSV import — the dedup engine reconciles overlaps automatically.
 
 ---
 
@@ -146,13 +149,13 @@ Your backend needs to implement:
 
 | Layer | Technology |
 |---|---|
-| Framework | React Native (Expo SDK 52) |
+| Framework | React Native (Expo SDK 54) |
 | Language | TypeScript |
 | Database | SQLite (expo-sqlite) |
 | Location | expo-location + expo-task-manager |
 | File Import | expo-document-picker + expo-file-system |
 | Navigation | React Navigation 6 |
-| Bank Sync | Plaid / TrueLayer (via backend proxy) |
+| Bank Sync | Monzo / Enable Banking (via Supabase Edge Function) |
 | Testing | Jest + jest-expo |
 
 ---
