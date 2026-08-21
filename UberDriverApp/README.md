@@ -106,19 +106,55 @@ UberDriverApp/
 
 ### Prerequisites
 
-```bash
-npm install -g expo-cli
-```
+- **Node.js 18+**
+- The **Expo Go** app on your phone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
 
-### Install & Run
+No global CLI install is needed — the project uses the local Expo CLI via `npx`.
+
+### 1. Configure environment
+
+Cloud sync, auth, and bank sync all need Supabase credentials. Copy the
+template and fill in your project values:
 
 ```bash
 cd UberDriverApp
-npm install
-npx expo start
+cp .env.safe .env
+# then edit .env and set SUPABASE_URL and SUPABASE_ANON_KEY
 ```
 
-Scan the QR code with Expo Go (iOS/Android) or press `i` for iOS simulator / `a` for Android emulator.
+`.env` is gitignored and never committed. Only the publishable **anon** key
+belongs here — the service-role key and all bank provider secrets live
+server-side as Supabase Edge Function secrets (see `docs/FREE_BANK_SYNC.md`).
+
+### 2. Install & run
+
+```bash
+npm install
+npm start
+```
+
+Scan the QR code with Expo Go, or press `i` for the iOS simulator / `a` for
+the Android emulator.
+
+### Testing on a phone that is not on your Wi-Fi
+
+`npm start` serves the JS bundle over your local network, so the phone has to
+be on the same Wi-Fi as your computer. To test from anywhere — cellular data,
+a different network, away from your desk — use tunnel mode instead:
+
+```bash
+npm run start:tunnel
+```
+
+This routes Metro through a public ngrok URL (`@expo/ngrok` is already a dev
+dependency), so the QR code works on any connection. Notes:
+
+- The first bundle load is slower than LAN — this is expected.
+- Your computer must stay awake with the command running; the tunnel dies when
+  you stop it or the machine sleeps.
+- The backend is unaffected either way: the `bank-sync` Edge Function, database,
+  and auth are hosted on Supabase, so bank syncing works regardless of which
+  network your phone is on.
 
 ### Run Tests
 
