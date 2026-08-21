@@ -137,31 +137,35 @@ describe('Scenario: Long trip GPS compression', () => {
 
 // ═══════════════════════════════════════════
 // SCENARIO 3: Driver checks monthly summary,
-// verifies IRS deduction calculation
+// verifies HMRC mileage allowance calculation
 // ═══════════════════════════════════════════
 
 describe('Scenario: Monthly tax summary', () => {
-  it('calculates correct IRS mileage deduction for March 2024', () => {
+  it('calculates the HMRC mileage allowance for a month under the threshold', () => {
     const totalMiles = 1250.5;
-    const deduction = calculateMileageDeduction(totalMiles, 2024);
+    const allowance = calculateMileageDeduction(totalMiles, 2026);
 
-    // 2024 rate: $0.67/mile
-    expect(deduction).toBeCloseTo(1250.5 * 0.67, 2);
-    expect(deduction).toBeCloseTo(837.84, 1);
+    // 2026/27 first-tier rate: 55p/mile, well under the 10,000-mile threshold
+    expect(allowance).toBeCloseTo(1250.5 * 0.55, 2);
+    expect(allowance).toBeCloseTo(687.78, 1);
   });
 
-  it('calculates correct deduction for different tax years', () => {
+  it('uses the right first-tier rate per tax year', () => {
     const miles = 1000;
-    expect(calculateMileageDeduction(miles, 2023)).toBeCloseTo(655, 0);
-    expect(calculateMileageDeduction(miles, 2024)).toBeCloseTo(670, 0);
-    expect(calculateMileageDeduction(miles, 2025)).toBeCloseTo(700, 0);
+    expect(calculateMileageDeduction(miles, 2025)).toBeCloseTo(450, 0);
+    expect(calculateMileageDeduction(miles, 2026)).toBeCloseTo(550, 0);
+  });
+
+  it('tapers to 25p once a driver passes 10,000 business miles', () => {
+    // A full-time driver: 10,000 x 55p + 5,000 x 25p
+    expect(calculateMileageDeduction(15000, 2026)).toBeCloseTo(6750, 0);
   });
 
   it('formats currency correctly', () => {
-    expect(formatCurrency(1250.50)).toBe('$1250.50');
-    expect(formatCurrency(-45.50)).toBe('-$45.50');
-    expect(formatCurrency(0)).toBe('$0.00');
-    expect(formatCurrency(1000, 'GBP')).toBe('£1000.00');
+    expect(formatCurrency(1250.50)).toBe('£1250.50');
+    expect(formatCurrency(-45.50)).toBe('-£45.50');
+    expect(formatCurrency(0)).toBe('£0.00');
+    expect(formatCurrency(1000, 'USD')).toBe('$1000.00');
   });
 
   it('formats mileage correctly', () => {

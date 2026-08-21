@@ -44,7 +44,7 @@ export function parseWalletExport(jsonData: string): WalletTransaction[] {
         transactionId: item.transactionId || item.id || item.reference || '',
         merchantName: item.merchantName || item.merchant || item.name || 'Unknown',
         amount: parseFloat(item.amount || item.value || '0'),
-        currency: item.currency || item.currencyCode || 'USD',
+        currency: item.currency || item.currencyCode || 'GBP',
         date: item.date || item.transactionDate || item.timestamp || new Date().toISOString(),
         cardLastFour: item.cardLastFour || item.card || undefined,
         category: item.category || undefined,

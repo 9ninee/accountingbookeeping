@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getTransactionSummary, getMileageSummary } from '../services/database';
 import { getTrackingStatus } from '../services/mileageTracker';
 import { getStorageStats, forceCleanup, StorageStats } from '../services/storageManager';
-import { formatCurrency, formatMiles, getCurrentMonthRange, calculateMileageDeduction } from '../utils/helpers';
+import { formatCurrency, formatMiles, getCurrentMonthRange, calculateMileageDeduction, formatTaxYear } from '../utils/helpers';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
 
@@ -165,18 +165,18 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* IRS Deduction Card */}
-      <View style={styles.irsCard}>
-        <View style={styles.irsLeft}>
-          <View style={styles.irsIconWrap}>
-            <Text style={styles.irsIcon}>$</Text>
+      {/* HMRC Mileage Allowance Card */}
+      <View style={styles.amapCard}>
+        <View style={styles.amapLeft}>
+          <View style={styles.amapIconWrap}>
+            <Text style={styles.amapIcon}>£</Text>
           </View>
           <View>
-            <Text style={styles.irsTitle}>IRS Mileage Deduction</Text>
-            <Text style={styles.irsSubtitle}>Estimated tax savings for 2024</Text>
+            <Text style={styles.amapTitle}>HMRC Mileage Allowance</Text>
+            <Text style={styles.amapSubtitle}>Estimated claim for {formatTaxYear()}</Text>
           </View>
         </View>
-        <Text style={styles.irsValue}>{formatCurrency(mileageDeduction)}</Text>
+        <Text style={styles.amapValue}>{formatCurrency(mileageDeduction)}</Text>
       </View>
 
       {/* Top Categories */}
@@ -357,8 +357,8 @@ const styles = StyleSheet.create({
     fontSize: 22, fontFamily: Fonts.monoBold, color: Colors.onSurface, marginTop: 6,
   },
 
-  // IRS Card
-  irsCard: {
+  // HMRC allowance card
+  amapCard: {
     backgroundColor: Colors.surfaceContainer,
     borderWidth: 1,
     borderColor: Colors.secondary + '4D',
@@ -369,16 +369,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
-  irsLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
-  irsIconWrap: {
+  amapLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  amapIconWrap: {
     width: 44, height: 44, borderRadius: 12,
     backgroundColor: Colors.secondary + '1A',
     justifyContent: 'center', alignItems: 'center',
   },
-  irsIcon: { fontSize: 20, fontFamily: Fonts.monoBold, color: Colors.secondary },
-  irsTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.onSurface },
-  irsSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 2 },
-  irsValue: { fontSize: 18, fontFamily: Fonts.monoBold, color: Colors.secondary },
+  amapIcon: { fontSize: 20, fontFamily: Fonts.monoBold, color: Colors.secondary },
+  amapTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Colors.onSurface },
+  amapSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Colors.onSurfaceVariant, marginTop: 2 },
+  amapValue: { fontSize: 18, fontFamily: Fonts.monoBold, color: Colors.secondary },
 
   // Categories
   categoryRow: {

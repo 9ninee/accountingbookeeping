@@ -17,7 +17,7 @@ import { getTransactionsForDedupInRange, findTransactionsByDedupHash, getAllTran
 
 const DUPLICATE_THRESHOLD = 0.75;
 const DESCRIPTION_SIMILARITY_THRESHOLD = 0.6;
-const AMOUNT_TOLERANCE = 0.02; // $0.02 tolerance for currency conversion differences
+const AMOUNT_TOLERANCE = 0.02; // GBP 0.02 tolerance for currency conversion differences
 
 /**
  * Generate a dedup hash for fast O(1) lookups.

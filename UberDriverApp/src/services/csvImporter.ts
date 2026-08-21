@@ -126,7 +126,7 @@ export function mapCSVToTransactions(
     const dateStr = row[headerIndex(mapping.date)] || '';
     const description = row[headerIndex(mapping.description)] || '';
     const amountStr = row[headerIndex(mapping.amount)] || '0';
-    const currency = mapping.currency ? row[headerIndex(mapping.currency)] || 'USD' : 'USD';
+    const currency = mapping.currency ? row[headerIndex(mapping.currency)] || 'GBP' : 'GBP';
     const reference = mapping.reference ? row[headerIndex(mapping.reference)] || null : null;
 
     // Parse amount: handle various formats

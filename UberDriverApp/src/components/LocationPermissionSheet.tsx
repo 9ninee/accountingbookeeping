@@ -32,7 +32,7 @@ export default function LocationPermissionSheet({ onAllow, onDeny }: LocationPer
         {/* Benefits */}
         <View style={styles.benefitsList}>
           <BenefitRow icon="S" text="Automatic mileage" />
-          <BenefitRow icon="$" text="IRS tracking" />
+          <BenefitRow icon="£" text="HMRC mileage" />
           <BenefitRow icon="H" text="Trip history" />
         </View>
 

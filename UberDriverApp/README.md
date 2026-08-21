@@ -14,7 +14,9 @@ Built with **React Native (Expo)** for a single codebase that runs on both platf
 - Automatic distance calculation using the Haversine formula
 - GPS jitter filtering for accurate readings
 - Trip history with distance, duration, and average speed
-- **IRS mileage deduction calculator** (standard rates by tax year)
+- **HMRC mileage allowance calculator** — Approved Mileage Allowance Payment
+  (AMAP) rates for cars/vans: 55p per mile for the first 10,000 business miles
+  of the UK tax year, 25p thereafter (55p rate effective 6 April 2026)
 - Route point recording for trip verification
 
 ### 2. Transaction Management

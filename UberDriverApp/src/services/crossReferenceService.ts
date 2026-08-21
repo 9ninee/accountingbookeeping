@@ -8,7 +8,7 @@ import { normalizeDescription, computeStringSimilarity, normalizeMerchant } from
 const MATCH_AMOUNT_TOLERANCE = 0.02;
 const MATCH_DATE_TOLERANCE_DAYS = 1;
 const MATCH_DESCRIPTION_THRESHOLD = 0.5;
-const CONFLICT_AMOUNT_TOLERANCE = 5.00; // Flag as conflict if amounts differ by > $5
+const CONFLICT_AMOUNT_TOLERANCE = 5.00; // Flag as conflict if amounts differ by > GBP 5
 
 /**
  * Cross-reference transactions from multiple import sources within a date range.

@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MileageTrip } from '../models/types';
 import { getMileageTripsPaginated } from '../services/database';
 import { startTrip, stopTrip, getTrackingStatus } from '../services/mileageTracker';
-import { formatMiles, formatDateTime } from '../utils/helpers';
+import { formatMiles, formatDateTime, calculateMileageDeduction } from '../utils/helpers';
 import { MileageStackParamList } from '../navigation/AppNavigator';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
@@ -168,7 +168,7 @@ export default function MileageScreen() {
     );
   };
 
-  const estimatedEarnings = tracking.currentDistanceMiles * 0.67;
+  const estimatedEarnings = calculateMileageDeduction(tracking.currentDistanceMiles);
 
   return (
     <View style={styles.container}>

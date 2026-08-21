@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Transaction, MileageTrip, RoutePoint, PaginationParams, PaginatedResult, StorageTier } from '../models/types';
 
 const DB_NAME = 'uber_driver_tracker.db';
-const CURRENT_DB_VERSION = 3;
+const CURRENT_DB_VERSION = 4;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -27,7 +27,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       date TEXT NOT NULL,
       description TEXT NOT NULL,
       amount REAL NOT NULL,
-      currency TEXT NOT NULL DEFAULT 'USD',
+      currency TEXT NOT NULL DEFAULT 'GBP',
       type TEXT NOT NULL CHECK (type IN ('business', 'personal')),
       category TEXT,
       import_source TEXT NOT NULL CHECK (import_source IN ('manual', 'csv_import', 'apple_wallet', 'bank_sync')),
@@ -90,6 +90,10 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
 
   if (currentVersion < 3) {
     await migrateToV3(database);
+  }
+
+  if (currentVersion < 4) {
+    await migrateToV4(database);
   }
 
   if (currentVersion < CURRENT_DB_VERSION) {
@@ -157,6 +161,15 @@ async function migrateToV3(database: SQLite.SQLiteDatabase): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_linked_banks_institution ON linked_banks(institution_id);
   `);
+}
+
+async function migrateToV4(database: SQLite.SQLiteDatabase): Promise<void> {
+  // This is a UK app and amounts have always been GBP, but early versions
+  // defaulted the currency column to 'USD' for manual, CSV and wallet imports
+  // (bank sync always wrote 'GBP'). Relabel those rows so they render as GBP.
+  await database.execAsync(
+    "UPDATE transactions SET currency = 'GBP' WHERE currency = 'USD' OR currency IS NULL"
+  );
 }
 
 async function migrateRoutePointsToTable(database: SQLite.SQLiteDatabase): Promise<void> {

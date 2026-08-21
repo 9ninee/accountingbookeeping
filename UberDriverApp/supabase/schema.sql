@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   date TEXT NOT NULL,
   description TEXT NOT NULL,
   amount NUMERIC NOT NULL,
-  currency TEXT DEFAULT 'USD',
+  currency TEXT DEFAULT 'GBP',
   type TEXT CHECK (type IN ('business', 'personal')),
   category TEXT,
   import_source TEXT CHECK (import_source IN ('manual', 'csv_import', 'apple_wallet', 'bank_sync')),

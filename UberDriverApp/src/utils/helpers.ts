@@ -16,7 +16,7 @@ export function generateId(): string {
 /**
  * Format a number as currency.
  */
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
+export function formatCurrency(amount: number, currency: string = 'GBP'): string {
   const symbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$';
   const absAmount = Math.abs(amount).toFixed(2);
   return amount < 0 ? `-${symbol}${absAmount}` : `${symbol}${absAmount}`;
@@ -93,15 +93,54 @@ export function getCurrentWeekRange(): { start: string; end: string } {
 }
 
 /**
- * Calculate IRS standard mileage deduction.
- * 2024 rate: $0.67 per mile for business use.
+ * HMRC Approved Mileage Allowance Payment (AMAP) rates for cars and vans.
+ *
+ * AMAP is tiered, not flat: the higher rate applies to the first 10,000
+ * business miles of the UK tax year and the lower rate to every mile after
+ * that. The threshold resets each 6 April.
+ *
+ * The 55p first-tier rate took effect 6 April 2026 (announced 21 May 2026 and
+ * backdated to the start of the tax year) — the first change since 2011-12,
+ * when it was 45p. The 25p upper-tier rate is unchanged.
+ *
+ * Motorcycles (24p) and bicycles (20p) are flat-rate and not modelled here;
+ * this app tracks car and van driving.
  */
-export function calculateMileageDeduction(miles: number, year: number = 2024): number {
-  const rates: Record<number, number> = {
-    2023: 0.655,
-    2024: 0.67,
-    2025: 0.70, // estimated
-  };
-  const rate = rates[year] || 0.67;
-  return miles * rate;
+const AMAP_THRESHOLD_MILES = 10000;
+const AMAP_UPPER_TIER_RATE = 0.25;
+
+function amapFirstTierRate(taxYearStart: number): number {
+  return taxYearStart >= 2026 ? 0.55 : 0.45;
+}
+
+/**
+ * The starting calendar year of the UK tax year containing `date`.
+ * The UK tax year runs 6 April - 5 April, so 2026 means "2026/27".
+ */
+export function getUkTaxYearStart(date: Date = new Date()): number {
+  const year = date.getFullYear();
+  const taxYearStart = new Date(year, 3, 6); // 6 April
+  return date >= taxYearStart ? year : year - 1;
+}
+
+/** Format a UK tax year for display, e.g. 2026 -> "2026/27". */
+export function formatTaxYear(taxYearStart: number = getUkTaxYearStart()): string {
+  const endShort = String((taxYearStart + 1) % 100).padStart(2, '0');
+  return `${taxYearStart}/${endShort}`;
+}
+
+/**
+ * Calculate the HMRC mileage allowance claimable on business miles driven
+ * within a single UK tax year.
+ */
+export function calculateMileageDeduction(
+  miles: number,
+  taxYearStart: number = getUkTaxYearStart()
+): number {
+  const firstTierMiles = Math.min(miles, AMAP_THRESHOLD_MILES);
+  const upperTierMiles = Math.max(0, miles - AMAP_THRESHOLD_MILES);
+  const total =
+    firstTierMiles * amapFirstTierRate(taxYearStart) +
+    upperTierMiles * AMAP_UPPER_TIER_RATE;
+  return Math.round(total * 100) / 100;
 }

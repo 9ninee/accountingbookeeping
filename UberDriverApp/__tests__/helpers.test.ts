@@ -3,6 +3,8 @@ import {
   formatCurrency,
   formatMiles,
   calculateMileageDeduction,
+  getUkTaxYearStart,
+  formatTaxYear,
   getCurrentMonthRange,
   getCurrentWeekRange,
 } from '../src/utils/helpers';
@@ -20,12 +22,16 @@ describe('generateId', () => {
 });
 
 describe('formatCurrency', () => {
-  it('formats positive USD amounts', () => {
-    expect(formatCurrency(125.5)).toBe('$125.50');
+  it('defaults to GBP (this is a UK app)', () => {
+    expect(formatCurrency(125.5)).toBe('£125.50');
   });
 
   it('formats negative amounts with minus sign', () => {
-    expect(formatCurrency(-45.5)).toBe('-$45.50');
+    expect(formatCurrency(-45.5)).toBe('-£45.50');
+  });
+
+  it('still formats USD when explicitly asked', () => {
+    expect(formatCurrency(125.5, 'USD')).toBe('$125.50');
   });
 
   it('formats GBP', () => {
@@ -47,20 +53,50 @@ describe('formatMiles', () => {
   });
 });
 
-describe('calculateMileageDeduction', () => {
-  it('calculates 2024 IRS rate correctly', () => {
-    const deduction = calculateMileageDeduction(100, 2024);
-    expect(deduction).toBe(67); // $0.67 * 100
+describe('calculateMileageDeduction (HMRC AMAP)', () => {
+  it('applies the 55p first-tier rate from 2026/27', () => {
+    expect(calculateMileageDeduction(100, 2026)).toBe(55);
   });
 
-  it('calculates 2023 IRS rate correctly', () => {
-    const deduction = calculateMileageDeduction(100, 2023);
-    expect(deduction).toBe(65.5); // $0.655 * 100
+  it('applies the old 45p first-tier rate for earlier tax years', () => {
+    expect(calculateMileageDeduction(100, 2025)).toBe(45);
   });
 
-  it('falls back to 0.67 for unknown year', () => {
-    const deduction = calculateMileageDeduction(100, 2020);
-    expect(deduction).toBe(67);
+  it('pays the full first-tier rate right up to the 10,000-mile threshold', () => {
+    expect(calculateMileageDeduction(10000, 2026)).toBe(5500);
+  });
+
+  it('drops to 25p for miles above the threshold', () => {
+    // 10,000 x 55p = 5500, plus 2,000 x 25p = 500
+    expect(calculateMileageDeduction(12000, 2026)).toBe(6000);
+  });
+
+  it('returns 0 for no miles', () => {
+    expect(calculateMileageDeduction(0, 2026)).toBe(0);
+  });
+});
+
+describe('getUkTaxYearStart', () => {
+  it('treats 6 April as the first day of the new tax year', () => {
+    expect(getUkTaxYearStart(new Date(2026, 3, 6))).toBe(2026);
+  });
+
+  it('treats 5 April as still the previous tax year', () => {
+    expect(getUkTaxYearStart(new Date(2026, 3, 5))).toBe(2025);
+  });
+
+  it('handles dates late in the calendar year', () => {
+    expect(getUkTaxYearStart(new Date(2026, 11, 31))).toBe(2026);
+  });
+});
+
+describe('formatTaxYear', () => {
+  it('renders the UK tax year span', () => {
+    expect(formatTaxYear(2026)).toBe('2026/27');
+  });
+
+  it('pads the century rollover', () => {
+    expect(formatTaxYear(2099)).toBe('2099/00');
   });
 });
 

@@ -138,7 +138,7 @@ export interface CrossReferenceResult {
 export interface CrossReferenceConflict {
   transactionIds: string[];
   sources: ImportSource[];
-  reason: string; // e.g., "Amount differs by $2.50"
+  reason: string; // e.g., "Amount differs by GBP 2.50"
   date: string;
   amounts: number[];
 }

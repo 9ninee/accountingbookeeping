@@ -53,7 +53,7 @@ export default function AddTransactionScreen() {
       date: now.split('T')[0],
       description: description.trim(),
       amount: -Math.abs(parseFloat(amount)),
-      currency: 'USD',
+      currency: 'GBP',
       type,
       category,
       importSource: 'manual',
@@ -109,7 +109,7 @@ export default function AddTransactionScreen() {
       />
 
       {/* Amount */}
-      <Text style={styles.label}>AMOUNT ($)</Text>
+      <Text style={styles.label}>AMOUNT (£)</Text>
       <TextInput
         style={styles.input}
         value={amount}
